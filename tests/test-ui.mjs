@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { LEVEL_OPS } from '../www/src/ui/level-ops.js';
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {
@@ -313,7 +314,7 @@ import { assert, assertThrows } from './helpers.mjs';
     'stack: a unit level\'s ⋯ menu has Convert to…, whose rows show the level in each unit of its dimensions and run CONVERT with a 1 of that unit, so LASTARG and Undo see the HP\'s own command');
   assert(/isMatrix\(value\) && value\.rows\.length === value\.rows\[0\]\?\.length \? item\('inv', 'chr', 'Inverse \(INV\)'\) \+ item\('det', 'chr', 'Determinant \(DET\)'\) \+ item\('egvl', 'chr', 'Eigenvalues \(EGVL\)'\) \+ item\('egv', 'chr', 'Eigenvectors \(EGV\)'\) : ''/.test(appSrc)
     && /isMatrix\(value\) \? item\('trn', 'chr', 'Transpose \(TRN\)'\) \+ item\('rref', 'chr', 'Row reduce \(RREF\)'\) : ''/.test(appSrc)
-    && /case 'inv': runOn\('INV'\); return;\s*case 'det': runOn\('DET'\); return;\s*case 'egvl': runOn\('EGVL'\); return;\s*case 'egv': runOn\('EGV'\); return;\s*case 'trn': runOn\('TRN'\); return;/.test(appSrc),
+    && ['inv', 'det', 'egvl', 'egv', 'trn'].map((act) => LEVEL_OPS[act]).join() === 'INV,DET,EGVL,EGV,TRN',
     'stack: a matrix level\'s ⋯ menu has Inverse, Determinant, Eigenvalues and Eigenvectors when it is square, and Transpose, run on the level as its EVAL and →NUM are, as a unit level has Convert to… and a formula Plot');
   assert((appSrc.match(/this\.stack\.runOp\(\(\) => lookup\(op\)\.fn\(this\.stack, this\.entry\)\)/g) || []).length === 1 && appSrc.includes('const runIt = () => lookup(op).fn(this.stack, this.entry);'),
     'stack: a level menu\'s EVAL, →NUM, DBUG, →LIST, DUPN and DROPN run through Stack.runOp, so LASTARG gives their arguments as it does for a typed command');
@@ -3196,34 +3197,34 @@ setAngle('RAD');
       && drawerRowSrc.includes("else if (act === 'pgdir') this._deleteVar(name, true);")
       && drawerRowSrc.includes('varPurge(name, withContents);'),
       'Variables: a folder with something in it offers Delete with its items (PGDIR), with Undo, where Delete could only refuse');
-    assert(appSrc.includes("isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',") && appSrc.includes("case 'rref': runOn('RREF'); return;"),
+    assert(appSrc.includes("isMatrix(value) ? item('trn', 'chr', 'Transpose (TRN)') + item('rref', 'chr', 'Row reduce (RREF)') : '',") && LEVEL_OPS.rref === 'RREF',
       'a matrix level offers Row reduce (RREF) beside Transpose, square or not');
     assert(appSrc.includes("sortable(value) ? item('sort', 'chr', 'Sort (SORT)') : '',")
       && appSrc.includes("isList(value) && value.items.length > 1 ? item('revlist', 'chr', 'Reverse (REVLIST)') + item('sumlist', 'chr', 'Sum (ΣLIST)') : '',")
-      && appSrc.includes("case 'sort': runOn('SORT'); return;") && appSrc.includes("case 'sumlist': runOn('ΣLIST'); return;"),
+      && LEVEL_OPS.sort === 'SORT' && LEVEL_OPS.sumlist === 'ΣLIST',
       'a list of two or more items offers Reverse (REVLIST) and Sum (ΣLIST) in its level menu, and Sort (SORT) only where SORT can order it');
     assert(/function sortable\(value\) \{\s+if \(!isList\(value\) \|\| value\.items\.length < 2\) return false;\s+try \{ const scratch = new Stack\(\); scratch\.pushMany\(\[value\]\); lookup\('SORT'\)\.fn\(scratch\); return true; \} catch \{ return false; \}/.test(appSrc),
       'the level menu finds out whether SORT can order a list by trying it on a scratch stack');
-    assert(appSrc.includes("isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',") && appSrc.includes("case 'abs': runOn('ABS'); return;"),
+    assert(appSrc.includes("isVector(value) ? item('abs', 'chr', 'Length (ABS)') : '',") && LEVEL_OPS.abs === 'ABS',
       'a vector level offers its length (ABS) in its menu');
     assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : isBinaryInteger(value) ? item('btor', 'chr', 'To a real number (B→R)') : item('num', 'chr', 'To a number (→NUM)'),")
       && appSrc.includes("isTagged(value) ? item('dtag', 'chr', 'Drop the tag (DTAG)') : '',")
       && appSrc.includes("isUnit(value) ? item('convert', 'chr', 'Convert to…') + item('uval', 'chr', 'Drop the unit (UVAL)') : '',")
-      && ['btor', 'dtag', 'uval'].every((act) => appSrc.includes(`case '${act}': runOn('${{ btor: 'B→R', dtag: 'DTAG', uval: 'UVAL' }[act]}'); return;`)),
+      && ['btor', 'dtag', 'uval'].every((act) => LEVEL_OPS[act] === { btor: 'B→R', dtag: 'DTAG', uval: 'UVAL' }[act]),
       'a binary integer offers B→R where →NUM gave it back unchanged, a tagged object DTAG and a unit object UVAL');
     assert(appSrc.includes("isName(value) && varRecall(value.id) !== undefined ? item('rcl', 'down', 'Recall its value (RCL)') : '',")
       && appSrc.includes("isName(value) && level === 1 && this.stack.depth > 1 ? item('sto', 'folder', 'Store level 2 in it (STO)') : '',")
-      && appSrc.includes("case 'rcl': runOn('RCL'); return;") && appSrc.includes("case 'sto': runOn('STO'); return;"),
+      && LEVEL_OPS.rcl === 'RCL' && LEVEL_OPS.sto === 'STO',
       'a quoted name offers RCL when its variable exists and, on level 1 under another value, STO, as the HP does with a name on the stack');
     assert(appSrc.includes("isName(value) && varOrder().includes(value.id) ? item('purge', 'trash', 'Purge its variable (PURGE)') : '',")
-      && appSrc.includes("case 'purge': runOn('PURGE'); return;"),
+      && LEVEL_OPS.purge === 'PURGE',
       'a quoted name offers PURGE when its variable is in this folder, the only one PURGE reaches, where RCL also finds one in a parent folder');
     assert(appSrc.includes("const takesApart = (value) => [isList, isVector, isMatrix, isComplex, isTagged, isUnit, isProgram, isSymbolic].some((is) => is(value));")
       && appSrc.includes("takesApart(value) ? item('objto', 'chr', 'Take apart (OBJ→)') : '',")
-      && appSrc.includes("case 'objto': runOn('OBJ→'); return;"),
+      && LEVEL_OPS.objto === 'OBJ→',
       'a list, array, complex number, tagged or unit object, program or algebraic offers Take apart (OBJ→) in its level menu; a string keeps STR→ and a number, which OBJ→ gives back, offers neither');
     assert(appSrc.includes("isSymbolic(value) ? item('expand', 'chr', 'Expand (EXPAND)') + item('factor', 'chr', 'Factor (FACTOR)') : '',")
-      && appSrc.includes("case 'expand': runOn('EXPAND'); return;") && appSrc.includes("case 'factor': runOn('FACTOR'); return;"),
+      && LEVEL_OPS.expand === 'EXPAND' && LEVEL_OPS.factor === 'FACTOR',
       "an algebraic level offers Expand (EXPAND) and Factor (FACTOR), the HP's everyday ALG rewrites, in its level menu");
     assert(appSrc.includes("isSymbolic(value) ? variablesOf(value.expr).slice(0, 3).map((name) => item(`solve:${escapeHtml(name)}`, 'chr', `Solve for ${name} (SOLVE)`)).join('') : '',")
       && appSrc.includes("const NAMED_LEVEL_OPS = Object.freeze({ solve: 'SOLVE', deriv: 'DERIV', integ: 'RISCH' });")
@@ -3240,14 +3241,14 @@ setAngle('RAD');
     assert(appSrc.includes("const html = `<h6>Level ${level} · ${escapeHtml(describeValue(value).type)}</h6>"),
       "a level's menu names the kind of object it acts on, as its INFO note does");
     assert(appSrc.includes("isString(value) ? item('strto', 'play', 'Run its text (STR→)') : item('eval', 'play', 'Evaluate (EVAL)'),")
-      && appSrc.includes("case 'strto': runOn('STR→'); return;"),
+      && LEVEL_OPS.strto === 'STR→',
       'a string level offers Run its text (STR→) where Evaluate (EVAL) gave the string back unchanged');
     assert(appSrc.includes("      isString(value) ? { label: 'STR→', title: 'Run its text', onPress: act('strto') } : { label: 'EVAL', title: 'Evaluate it', onPress: act('eval') },")
       && appSrc.includes("      ...(plottable(value) ? [{ label: 'PLOT', title: 'Plot it', onPress: act('plot') }, { label: 'TABLE', title: 'Its table of values', onPress: act('table') }] : []),"),
       'the interactive stack soft keys show STR→ on a string, as its menu does, and a formula keeps EVAL with PLOT and TABLE after it, where PLOT took EVAL\'s place');
     assert(/isReal\(value\)\s*\? \{ label: '→Q', title: 'To a fraction', onPress: act\('toq'\) \}\s*: isBinaryInteger\(value\) \? \{ label: 'B→R', title: 'To a real number', onPress: act\('btor'\) \}\s*: \{ label: '→NUM', title: 'Evaluate to a number', onPress: act\('num'\) \},/.test(appSrc),
       'the interactive stack soft keys show →Q on a decimal and B→R on a binary integer where →NUM did nothing, as its menu does');
-    assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : ") && appSrc.includes("case 'toq': runOn('→Q'); return;"),
+    assert(appSrc.includes("isReal(value) ? item('toq', 'chr', 'To a fraction (→Q)') : ") && LEVEL_OPS.toq === '→Q',
       'a level holding a decimal offers To a fraction (→Q), as the HP\'s →Q turns .75 into \'3/4\', in place of →NUM, which leaves a decimal as it is');
     assert(appSrc.includes(`data-row-act="more" title="More actions (\${shortcutText('level.menu')})"`),
       'a level\'s More actions button names its key, Shift+F10, as Edit and Drop beside it name theirs');
@@ -4904,4 +4905,11 @@ const resetRun = await (async () => {
   } finally {
     if (real) globalThis.matchMedia = real;
   }
+}
+
+{
+  const { LEVEL_OPS, LEVEL_RANGE_OPS } = await import('../www/src/ui/level-ops.js');
+  const missing = [...Object.values(LEVEL_OPS), ...Object.values(LEVEL_RANGE_OPS)].filter((op) => !lookup(op));
+  assert(missing.length === 0 && Object.keys(LEVEL_OPS).length === 24 && Object.keys(LEVEL_RANGE_OPS).length === 3,
+    `level actions: every command the level menu runs is a registered command${missing.length ? `; missing ${missing.join(', ')}` : ''}`);
 }

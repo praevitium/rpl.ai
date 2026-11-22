@@ -48,6 +48,7 @@ import { displayDigitsArg } from './rpl/ops/display.js';
 import { mesMenu, solverNames } from './rpl/ops/root.js';
 import { plotSettings } from './rpl/ops/graphics.js';
 import { alongOpenName } from './ui/plot-engine.js';
+import { LEVEL_OPS, LEVEL_RANGE_OPS } from './ui/level-ops.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic, isValidHpIdentifier, isReservedHpName,
@@ -1427,6 +1428,8 @@ class App {
     };
     const [verb, name] = act.split(':');
     if (name && NAMED_LEVEL_OPS[verb]) { runOn(NAMED_LEVEL_OPS[verb], Name(name, { quoted: true })); return; }
+    if (Object.hasOwn(LEVEL_OPS, act)) { runOn(LEVEL_OPS[act]); return; }
+    if (Object.hasOwn(LEVEL_RANGE_OPS, act)) { runOnLevels(LEVEL_RANGE_OPS[act]); return; }
     switch (act) {
       case 'edit': this.editLevel(level); return;
       case 'view': this._viewLevel(level); return;
@@ -1435,36 +1438,9 @@ class App {
       case 'roll': run(() => moveLevel(this.stack, level, 1)); this.selectLevel(1); return;
       case 'rolld': run(() => moveLevel(this.stack, 1, level)); this.selectLevel(level); return;
       case 'drop': run(() => dropLevel(this.stack, level)); if (!this.stack.depth) this.clearSelection(); return;
-      case 'tolist': runOnLevels('→LIST'); return;
-      case 'dupn': runOnLevels('DUPN'); return;
-      case 'dropn': runOnLevels('DROPN'); return;
       case 'keep': run(() => keepLevels(this.stack, level)); this.clearSelection(); return;
       case 'level': run(() => this.stack.push(Integer(level))); this.selectLevel(level + 1); return;
       case 'info': this._levelInfo(level); return;
-      case 'eval': runOn('EVAL'); return;
-      case 'strto': runOn('STR→'); return;
-      case 'debug': runOn('DBUG'); return;
-      case 'num': runOn('→NUM'); return;
-      case 'toq': runOn('→Q'); return;
-      case 'btor': runOn('B→R'); return;
-      case 'dtag': runOn('DTAG'); return;
-      case 'objto': runOn('OBJ→'); return;
-      case 'rcl': runOn('RCL'); return;
-      case 'sto': runOn('STO'); return;
-      case 'purge': runOn('PURGE'); return;
-      case 'uval': runOn('UVAL'); return;
-      case 'expand': runOn('EXPAND'); return;
-      case 'factor': runOn('FACTOR'); return;
-      case 'inv': runOn('INV'); return;
-      case 'det': runOn('DET'); return;
-      case 'egvl': runOn('EGVL'); return;
-      case 'egv': runOn('EGV'); return;
-      case 'trn': runOn('TRN'); return;
-      case 'rref': runOn('RREF'); return;
-      case 'abs': runOn('ABS'); return;
-      case 'sort': runOn('SORT'); return;
-      case 'revlist': runOn('REVLIST'); return;
-      case 'sumlist': runOn('ΣLIST'); return;
       case 'convert': this._convertMenu(level, anchor); return;
       case 'plot': this.clearSelection(); this.plotValue(value); return;
       case 'table': this.clearSelection(); this.drawers.graph.openTableOf(value); return;
