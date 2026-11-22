@@ -1,24 +1,20 @@
 import {
-  isNum, parseAlgebra, evalAst, defaultFnEval, freeVars, Bin,
+  parseAlgebra, freeVars, Bin,
 } from '../rpl/algebra.js';
 import {
   isMatrix, isVector, isList, isSymbolic, isTagged,
   toRealOrThrow, Matrix, Real, RList, Symbolic, Tagged,
 } from '../rpl/types.js';
-import { evalFitModel, varRecall } from '../rpl/state.js';
+import { evalFitModel } from '../rpl/state.js';
 import { _expandUserCalls } from '../rpl/ops/internal.js';
 import { equationToSymbolic, valueToEquationDraft, renameVariable } from './equation-editor.js';
+import { lookupEnv, storedNumber, evalNumeric } from './plot-eval.js';
 
-export { evalFitModel };
+export { evalFitModel, lookupEnv, evalNumeric };
 
 export const TRACE_COLORS = Object.freeze([
   '#e5534b', '#4a9eed', '#57ab5a', '#b083f0', '#f0883e', '#2bb8b3',
 ]);
-
-const CONSTS = Object.freeze({
-  pi: Math.PI, π: Math.PI,
-  e: Math.E,
-});
 
 // PPAR's independent variable, when it names one, is bound beside the usual X, T and θ.
 function bindIndependentVariable(v, name) {
@@ -29,52 +25,6 @@ function bindIndependentVariable(v, name) {
 
 export function nextTraceColor(index) {
   return TRACE_COLORS[index % TRACE_COLORS.length];
-}
-
-export function lookupEnv(name, env) {
-  if (env && Object.prototype.hasOwnProperty.call(env, name)) return env[name];
-  if (env) {
-    const lower = String(name).toLowerCase();
-    for (const k of Object.keys(env)) {
-      if (k.toLowerCase() === lower) return env[k];
-    }
-  }
-  if (Object.prototype.hasOwnProperty.call(CONSTS, name)) return CONSTS[name];
-  const folded = String(name).toLowerCase();
-  if (Object.prototype.hasOwnProperty.call(CONSTS, folded)) return CONSTS[folded];
-  return undefined;
-}
-
-function plotFnEval(name, args, opts = {}) {
-  if (args.some(a => !Number.isFinite(a))) return NaN;
-  const toRad = opts.toRad || (x => x);
-  const fromRad = opts.fromRad || (x => x);
-  if (args.length === 1) {
-    const x = args[0];
-    switch (String(name).toUpperCase()) {
-      case 'SIN': return Math.sin(toRad(x));
-      case 'COS': return Math.cos(toRad(x));
-      case 'TAN': return Math.tan(toRad(x));
-      case 'ASIN': return x >= -1 && x <= 1 ? fromRad(Math.asin(x)) : NaN;
-      case 'ACOS': return x >= -1 && x <= 1 ? fromRad(Math.acos(x)) : NaN;
-      case 'ATAN': return fromRad(Math.atan(x));
-      default: break;
-    }
-  }
-  const folded = defaultFnEval(name, args);
-  return Number.isFinite(folded) ? folded : NaN;
-}
-
-// As on the HP, a name the plot doesn't bind evaluates to the number its variable holds.
-function storedNumber(name) {
-  const value = varRecall(name);
-  if (!value) return null;
-  try {
-    const n = toRealOrThrow(isTagged(value) ? value.value : value);
-    return Number.isFinite(n) ? n : null;
-  } catch {
-    return null;
-  }
 }
 
 // The names a plot cannot evaluate: neither its variable, a constant nor a variable holding a number.
@@ -132,18 +82,6 @@ export function alongOpenName(value, indep = null) {
   };
   const shown = along(value);
   return { value: shown, moved: [...new Set(moved)] };
-}
-
-export function evalNumeric(ast, env, opts = {}) {
-  const node = evalAst(
-    ast,
-    (name) => {
-      const v = lookupEnv(name, env);
-      return Number.isFinite(v) ? v : storedNumber(name);
-    },
-    (name, args) => plotFnEval(name, args, opts),
-  );
-  return isNum(node) && Number.isFinite(node.value) ? node.value : NaN;
 }
 
 // A user function such as one DEFINE made is plotted through its body.

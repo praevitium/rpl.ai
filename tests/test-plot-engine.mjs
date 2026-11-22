@@ -1172,3 +1172,12 @@ import { stackValueToTrace, traceToStackValues } from '../www/src/ui/graph-view.
   assert(svg.includes('M13 10 A3 3 0 1 1 7 10 A3 3 0 1 1 13 10') && svg.includes('<path d="M4 0 A4 4 0 0 1 0 4" fill="none"'),
     'SvgContext: a full circle is two half arcs and a quarter turn is one arc');
 }
+
+{
+  const plotEval = await import('../www/src/ui/plot-eval.js');
+  const engine = await import('../www/src/ui/plot-engine.js');
+  assert(engine.evalNumeric === plotEval.evalNumeric && engine.lookupEnv === plotEval.lookupEnv,
+    'plot-eval: the plot engine passes on the evaluator the equation writer shares with it');
+  assert(plotEval.evalNumeric(parsePlotExpr('X^2+1'), { x: 2 }) === 5 && plotEval.lookupEnv('PI', {}) === Math.PI,
+    'plot-eval: evalNumeric and lookupEnv work on their own');
+}
