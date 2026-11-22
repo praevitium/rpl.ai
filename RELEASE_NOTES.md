@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.7 (2026-11-21)
+**Latest release:** v0.9.8 (2026-11-22)
 
 ---
 
@@ -18,6 +18,15 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.9.8 — 2026-11-22
+
+- Changed: nothing a user sees. The 27 level-menu actions that run one
+  command on a level (→NUM, EXPAND, RREF, →LIST and the rest) are a table
+  in `ui/level-ops.js` instead of a case each, and a test checks every
+  command in it exists.
 
 ---
 
