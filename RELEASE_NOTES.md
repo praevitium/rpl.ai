@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.6 (2026-11-21)
+**Latest release:** v0.9.7 (2026-11-21)
 
 ---
 
@@ -18,6 +18,14 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.9.7 — 2026-11-21
+
+- Changed: nothing a user sees. The check for a phone or tablet (a finger
+  as the main pointer) is one `onTouch()` in `ui/dom.js`, where the
+  command line, completion list, tour and both writers each had a copy.
 
 ---
 
