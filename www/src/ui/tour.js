@@ -1,4 +1,4 @@
-import { escapeHtml } from './dom.js';
+import { escapeHtml, onTouch } from './dom.js';
 
 export const TOUR_STEPS = Object.freeze([
   Object.freeze({ target: '#stackView', title: 'The stack', text: 'Everything you enter lands on level 1, and commands take their arguments from here. Click a level to select it; its actions appear on the row and in the menu bar.', touch: "Everything you enter lands on level 1, and commands take their arguments from here. Tap a level to select it and its actions appear under it; a finger held on it opens its menu, a swipe sideways drops it, and a drag up or down by its number moves it, or copies it to the command line or an open writer, or stores it in a variable's soft key." }),
@@ -24,7 +24,6 @@ export function cardPoint(box, w, h, vw, vh) {
   return { x, y: box.top - GAP };
 }
 
-const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 
 // A step names its target once per layout; it shows on whichever is on screen.
 function visibleTarget(step) {

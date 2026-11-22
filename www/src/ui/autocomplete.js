@@ -5,12 +5,12 @@ import { shortDescription } from './command-reference.js';
 import { fuzzyScore, matchPositions, highlightSegments } from './op-search.js';
 import { escapeHtml, typeName, markScrollEnds, LONG_PRESS_MS } from './display.js';
 import { UNIT_GROUPS, BRANCH_KEYS } from './menus.js';
+import { onTouch } from './dom.js';
 
 const MAX_ROWS = 6;
 const AC_MARGIN = 6;
 const WORD_BREAK = /[\s{}[\]()"'`«»,+\-*/^=<>|]/;
 const CLOSES_A_WORD = /^[\s)\]}»`']/;
-const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 
 export function wordBeforeCursor(text, cursor) {
   const before = String(text ?? '').slice(0, cursor);

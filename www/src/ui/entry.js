@@ -16,9 +16,9 @@ import {
   EditorState, EditorView, Transaction, keymap, drawSelection,
   history, defaultKeymap, undo as cmUndo, redo as cmRedo,
 } from '../../vendor/codemirror/codemirror.bundle.js';
+import { onTouch } from './dom.js';
 
 const UNDO_WORD = /^(UNDO|LASTSTACK|REDO)$/i;
-const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 
 const SEGMENTER = globalThis.Intl?.Segmenter ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }) : null;
 const isHighSurrogate = (c) => c >= '\uD800' && c <= '\uDBFF';

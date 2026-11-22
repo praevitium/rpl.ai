@@ -21,3 +21,6 @@ export function markScrollEnds(el) {
   el.classList.toggle('more-t', el.scrollTop > 1);
   el.classList.toggle('more-b', el.scrollTop + el.clientHeight < el.scrollHeight - 1);
 }
+
+// A finger is the main pointer: a phone or tablet, not a mouse or a trackpad.
+export const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;

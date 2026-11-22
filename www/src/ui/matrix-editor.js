@@ -1,4 +1,4 @@
-import { escapeHtml, markScrollEdges } from './dom.js';
+import { escapeHtml, markScrollEdges, onTouch } from './dom.js';
 import { writerKeys } from './input-area.js';
 import { parseEntry, fromTyped } from '../rpl/parser.js';
 import { format, withFractionMark, fractionMark, separatorMark } from '../rpl/formatter.js';
@@ -325,7 +325,6 @@ const FACE_TEXT = Object.freeze({ '−': '-', '×': '*', '÷': '/', 'yˣ': '^', 
 const MARK_FACES = Object.freeze({ '.': fractionMark, ',': separatorMark });
 const FACE_MOVES = Object.freeze({ '▲': [-1, 0], '▼': [1, 0], '◀': [0, -1], '▶': [0, 1] });
 const FACE_STEPS = Object.freeze({ TAB: 'next', '⇧TAB': 'prev', '⇧ENTER': 'down' });
-const onTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 const TAP_KEYS = Object.freeze([
   { face: '⇧TAB', icon: 'chl', title: 'Previous cell (⇧Tab)' },
   { face: 'TAB', icon: 'chr', title: 'Next cell (Tab)' },

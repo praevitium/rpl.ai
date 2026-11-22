@@ -4890,3 +4890,18 @@ const resetRun = await (async () => {
   dom.markScrollEnds(el);
   assert([...classes].sort().join() === 'more-r,more-t', 'markScrollEdges and markScrollEnds mark the edges a scroller continues past');
 }
+
+{
+  const { onTouch } = await import('../www/src/ui/dom.js');
+  const real = globalThis.matchMedia;
+  try {
+    globalThis.matchMedia = (q) => ({ matches: q === '(pointer: coarse)' });
+    const finger = onTouch();
+    globalThis.matchMedia = () => ({ matches: false });
+    const mouse = onTouch();
+    delete globalThis.matchMedia;
+    assert(finger === true && mouse === false && onTouch() === false, 'onTouch: true only where a finger is the main pointer, and false where matchMedia is missing');
+  } finally {
+    if (real) globalThis.matchMedia = real;
+  }
+}

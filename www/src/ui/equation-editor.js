@@ -13,7 +13,7 @@ import { _astToRplValue } from '../rpl/ops/internal.js';
 import { giac } from '../rpl/cas/giac-engine.mjs';
 import { state as calcState, toRadians, fromRadians, testUserFlag } from '../rpl/state.js';
 import { evalNumeric } from './plot-eval.js';
-import { escapeHtml, markScrollEdges } from './dom.js';
+import { escapeHtml, markScrollEdges, onTouch } from './dom.js';
 import { writerKeys } from './input-area.js';
 
 const HOLE = Object.freeze({ t: 'hole' });
@@ -1850,7 +1850,6 @@ globalThis.addEventListener?.('online', () => insightWorker.retry());
 // a hidden one. The rest character gives Backspace something to delete.
 const SOFT_KEYS_REST = '\u200b';
 const EQW_LABEL = 'Equation. Type to build it: / makes a fraction, ^ a power, ( a group. Enter pushes it, Esc cancels.';
-const typesOnTouch = () => globalThis.matchMedia?.('(pointer: coarse)').matches === true;
 
 export class EquationEditor {
   constructor({ app } = {}) {
@@ -1938,7 +1937,7 @@ export class EquationEditor {
   }
 
   focus() {
-    if (!typesOnTouch()) { this.el.focus({ preventScroll: true }); return; }
+    if (!onTouch()) { this.el.focus({ preventScroll: true }); return; }
     this._restSoftKeys();
     this.setPhoneKeyboard(this.app.phoneKeyboard?.());
     this.keys.focus({ preventScroll: true });
