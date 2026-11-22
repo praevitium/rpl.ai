@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.5 (2026-11-21)
+**Latest release:** v0.9.6 (2026-11-21)
 
 ---
 
@@ -18,6 +18,15 @@ later used in Xcas and the HP Prime.
 rpl.ai is a web app: the whole calculator is plain HTML / CSS / ES modules
 that run in any modern browser — no build step, no framework, no bundler
 required for development.
+
+---
+
+## v0.9.6 — 2026-11-21
+
+- Changed: nothing a user sees. The numeric evaluator that plots and the
+  equation writer's insights share moved to its own `ui/plot-eval.js`,
+  which ends the loop where the plot engine and the equation writer each
+  imported the other.
 
 ---
 
