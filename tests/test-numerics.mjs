@@ -7548,3 +7548,15 @@ function _arrayEq(a, b) {
     && Math.abs(numeric._lngamma(200) - 857.9336698258574) < 1e-9 && Math.abs(numeric._regGammaQ(1, 1) - Math.exp(-1)) < 1e-12,
     'ops/numeric.js: 20!, Γ(5), ln Γ(200) and Q(1,1) come out right');
 }
+
+{
+  const numeric = await import('../www/src/rpl/ops/numeric.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  const { Integer, Rational } = await import('../www/src/rpl/types.js');
+  const { format } = await import('../www/src/rpl/formatter.js');
+  assert(['exactSqrt', 'exactXroot', '_radicalBinary'].every((name) => internal[name] === numeric[name]),
+    'ops/numeric.js: internal.js passes on the exact-root functions unchanged');
+  assert(format(numeric.exactSqrt(Integer(12n))) === '`2*SQRT(3)`' && format(numeric.exactSqrt(Rational(1n, 4n))) === '1/2'
+    && format(numeric.exactXroot(Integer(-8n), 3n)) === '-2' && numeric.exactXroot(Integer(2n), 3n) === null,
+    'ops/numeric.js: √12 is 2*√3, √(1/4) is 1/2, the cube root of -8 is -2 and of 2 is not exact');
+}

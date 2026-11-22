@@ -1,8 +1,139 @@
-// Factorials, Γ and the incomplete gamma function, on plain numbers. internal.js passes them on to the command files.
+// Exact roots and square-root arithmetic, factorials, Γ and the incomplete gamma function. internal.js passes them on
+// to the command files.
+import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
+import { isInteger, Integer, Rational, Symbolic } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
+import { Num as AstNum, Bin as AstBin, Fn as AstFn, Neg as AstNeg, exactRational } from '../algebra.js';
 
 // The HP holds an object in its memory, a few million digits or cells at most; a bigger one is not worth a frozen page.
 export const MAX_INTEGER_DIGITS = 1_000_000;
+
+// The HP's error list: 0/0 is an Undefined result, any other x/0 an Infinite result.
+export const _divisionByZero = (dividendIsZero) => new RPLError(dividendIsZero ? 'Undefined result' : 'Infinite result');
+
+const _fraction = (v) => (isInteger(v) ? new Fraction(v.value, 1n) : new Fraction(v.n, v.d));
+
+export function _fractionValue(f) {
+  return f.d === 1n ? Integer(f.s * f.n) : Rational(f.s * f.n, f.d);
+}
+
+// The integer k-th root of n ≥ 0 when n is a perfect k-th power, else null.
+function _exactRoot(n, k) {
+  if (n < 2n) return n;
+  const bits = BigInt(n.toString(2).length);
+  if (k >= bits) return null;
+  let x = 1n << ((bits + k - 1n) / k);
+  for (;;) {
+    const next = ((k - 1n) * x + n / x ** (k - 1n)) / k;
+    if (next >= x) break;
+    x = next;
+  }
+  return x ** k === n ? x : null;
+}
+
+// f's exact k-th root, -2 for -8 and k = 3, or null.
+function _fractionRoot(f, k) {
+  if (f.s < 0n && k % 2n === 0n) return null;
+  const rn = _exactRoot(f.n, k), rd = _exactRoot(f.d, k);
+  return rn === null || rd === null ? null : new Fraction(f.s * rn, rd);
+}
+
+// n = a²·b, with the square factors that trial division up to 10^4 finds, and a square remainder, taken out.
+function _squareFactor(n) {
+  let a = 1n, b = 1n, m = n;
+  for (let d = 2n; d * d <= m && d <= 10000n; d++) {
+    let e = 0n;
+    while (m % d === 0n) { m /= d; e++; }
+    a *= d ** (e / 2n);
+    b *= d ** (e % 2n);
+  }
+  const r = _exactRoot(m, 2n);
+  return r === null ? { a, b: b * m } : { a: a * r, b };
+}
+
+// c·√b as the HP writes it: 2*√2, √2/2 or 2*√2/3.
+function _radicalAst(c, b) {
+  const root = AstFn('SQRT', [AstNum(b)]);
+  const top = c.n === 1n ? root : AstBin('*', AstNum(c.n), root);
+  return c.d === 1n ? top : AstBin('/', top, AstNum(c.d));
+}
+
+// x^e for a non-negative fraction x when the root is exact (4^(1/2) is 2) or a square root (8^(1/2) is 2*√2), else null.
+export function _exactPower(x, e) {
+  if (x.s < 0n) return null;
+  const p = e.s * e.n;
+  const root = _fractionRoot(x, e.d);
+  if (root) {
+    if (root.n === 0n && p < 0n) throw _divisionByZero(false);
+    return _fractionValue(root.pow(new Fraction(p, 1n)));
+  }
+  if (e.d !== 2n) return null;
+  const { a, b } = _squareFactor(x.n * x.d);
+  return Symbolic(_radicalAst(x.pow(new Fraction((p - 1n) / 2n, 1n)).mul(new Fraction(a, x.d)), b));
+}
+
+// The HP's exact √ of a non-negative integer or fraction: 2, 1/2, 2*√2 or √2/3.
+export function exactSqrt(v) {
+  return _exactPower(_fraction(v), new Fraction(1n, 2n));
+}
+
+const _NEG_ONE = new Fraction(-1n, 1n);
+
+// c·√b as [c, b], c an exact fraction and b a positive integer: a number, √b, c*√b, √b/d, c*√b/d or a negation.
+function _radicalTerm(ast) {
+  if (ast.kind === 'neg') {
+    const t = _radicalTerm(ast.arg);
+    return t && [t[0].mul(_NEG_ONE), t[1]];
+  }
+  const r = exactRational(ast);
+  if (r) return [new Fraction(r[0], r[1]), 1n];
+  if (ast.kind === 'fn' && ast.name === 'SQRT') {
+    const b = exactRational(ast.args[0]);
+    return b && b[1] === 1n && b[0] > 0n ? [new Fraction(1n, 1n), b[0]] : null;
+  }
+  if (ast.kind !== 'bin' || (ast.op !== '*' && ast.op !== '/')) return null;
+  const x = _radicalTerm(ast.l), y = _radicalTerm(ast.r);
+  if (!x || !y || (x[1] !== 1n && y[1] !== 1n)) return null;
+  if (ast.op === '*') return [x[0].mul(y[0]), x[1] * y[1]];
+  return y[1] === 1n && y[0].n !== 0n ? [x[0].div(y[0]), x[1]] : null;
+}
+
+function _radicalValue(c, b) {
+  const { a, b: rest } = _squareFactor(b);
+  const coef = c.mul(new Fraction(a, 1n));
+  if (coef.n === 0n || rest === 1n) return _fractionValue(coef);
+  const ast = _radicalAst(new Fraction(coef.n, coef.d), rest);
+  return Symbolic(coef.s < 0n ? AstNeg(ast) : ast);
+}
+
+// (c·√b)^k = c^k·b^(k div 2)·√b when k is odd.
+function _radicalPower(c, b, k) {
+  const m = k < 0n ? -k : k;
+  const coef = c.pow(new Fraction(m, 1n)).mul(new Fraction(b ** (m / 2n), 1n));
+  const root = m % 2n === 1n ? b : 1n;
+  if (k >= 0n) return _radicalValue(coef, root);
+  return coef.n === 0n ? null : _radicalValue(new Fraction(1n, 1n).div(coef.mul(new Fraction(root, 1n))), root);
+}
+
+// Exact arithmetic on square roots, as the HP's exact mode does it: √2*√2 is 2, √8/√2 is 2, (2*√3)^2 is 12, √2+√2 is 2*√2.
+export function _radicalBinary(op, l, r) {
+  const x = _radicalTerm(l), y = _radicalTerm(r);
+  if (!x || !y || (x[1] === 1n && y[1] === 1n)) return null;
+  switch (op) {
+    case '*': return _radicalValue(x[0].mul(y[0]), x[1] * y[1]);
+    case '/': return y[0].n === 0n ? null : _radicalValue(x[0].div(y[0].mul(new Fraction(y[1], 1n))), x[1] * y[1]);
+    case '+': case '-': return x[1] === y[1] ? _radicalValue(op === '+' ? x[0].add(y[0]) : x[0].sub(y[0]), x[1]) : null;
+    case '^': return y[1] === 1n && y[0].d === 1n && y[0].n <= 64n ? _radicalPower(x[0], x[1], y[0].s * y[0].n) : null;
+    default: return null;
+  }
+}
+
+// The k-th root of an integer or fraction when it is exact, -2 for -8 and k = 3, else null.
+export function exactXroot(v, k) {
+  const root = _fractionRoot(_fraction(v), k);
+  return root && _fractionValue(root);
+}
+
 
 // lo*(lo+1)*...*hi, halved so the big multiplications are between numbers of a size: 100000! takes 60 ms, not 4 s.
 function _rangeProduct(lo, hi) {
