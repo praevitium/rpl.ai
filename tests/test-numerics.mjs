@@ -7538,3 +7538,13 @@ function _arrayEq(a, b) {
   assert(top('1E400 RDZ RAND') === top('1E400 RDZ RAND') && top('5. RDZ RAND') === top('5 RDZ RAND'), 'RDZ takes a whole number of any size as the seed');
   assertThrows(() => runLine('-1E400 FACT'), 'Infinite result', 'FACT of a huge negative whole number is an Infinite result error, as for -5.');
 }
+
+{
+  const numeric = await import('../www/src/rpl/ops/numeric.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  assert(['_bigFactorial', '_gamma', '_lngamma', '_regGammaQ', 'MAX_INTEGER_DIGITS'].every((name) => internal[name] === numeric[name]),
+    'ops/numeric.js: internal.js passes on the factorial and gamma functions unchanged');
+  assert(numeric._bigFactorial(20n) === 2432902008176640000n && Math.abs(numeric._gamma(5) - 24) < 1e-9
+    && Math.abs(numeric._lngamma(200) - 857.9336698258574) < 1e-9 && Math.abs(numeric._regGammaQ(1, 1) - Math.exp(-1)) < 1e-12,
+    'ops/numeric.js: 20!, Γ(5), ln Γ(200) and Q(1,1) come out right');
+}
