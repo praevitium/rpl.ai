@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { LEVEL_OPS } from '../www/src/ui/level-ops.js';
+import { topOverlay } from '../www/src/ui/overlays.js';
 import { Stack } from '../www/src/rpl/stack.js';
 import { lookup } from '../www/src/rpl/ops.js';
 import {
@@ -1934,10 +1935,11 @@ setAngle('RAD');
   assert(/if \(!\(this\.prefs\.keepAwake \|\| this\._runHalt\) \|\| this\._offScreen \|\|/.test(appSrc)
     && /this\._offScreen = off;\n    this\.keepAwake\(\);/.test(appSrc) && /this\._offScreen = null;\n      this\.keepAwake\(\);/.test(appSrc),
     'Settings: Keep the screen on lets go while OFF\'s dark screen shows and takes the lock again as a tap wakes the calculator (the phone stayed lit on the off screen)');
-  assert(/\[\(\) => !!this\.pendingEdit, \(\) => this\.cancelEdit\(\)\],\n      \[\(\) => this\.selection != null, \(\) => this\.clearSelection\(\)\],\n    \];/.test(appSrc),
+  assert(closesFirst('back', { pendingEdit: {}, selection: 1 }) === 'cancelEdit' && closesFirst('back', { selection: 1 }) === 'clearSelection'
+    && closesFirst('back', {}) === null,
     'back button: a selected stack level is the last thing back puts away, as the HP\'s ON leaves the interactive stack, before the app itself (back with a level selected left the installed app)');
-  assert(/const overlays = \[\n[^\n]*\n      \[\(\) => !!this\._offScreen, \(\) => this\._offScreen\.click\(\)\],/.test(appSrc)
-    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.back\(\)\],\n      \[\(\) => !!this\.entry\.error, \(\) => this\.dismissError\(\)\],/.test(appSrc)
+  assert(closesFirst('back', { _offScreen: true, running: true, error: true, popover: true }) === 'wake'
+    && closesFirst('back', { sheets: true, error: true }) === 'sheets.back' && closesFirst('back', { error: true, selection: 1 }) === 'dismissError'
     && /this\._offScreen = off;\n    this\.keepAwake\(\);\n[^\n]*\n    this\._syncBackButton\?\.\(\);/.test(appSrc),
     'back button: as the HP\'s ON wakes it and clears an error message, back wakes the calculator from OFF (first, since the off screen covers everything) and puts an error banner away before the app is left (both left the installed app); OFF, which comes after its tap, guards the history itself');
   {
@@ -3110,8 +3112,7 @@ setAngle('RAD');
     "INFORM: its banner is the title with Fill in, Cancel and Stop keys; the form opens in a sheet with a label and a 40 px input per field, the help as the placeholder and the initial value as source, in the form's columns on a wide screen and one on a phone; OK parses each field (an empty one NOVAL), checks the field's types and answers with the values and 1, a failing field keeping the form open with the complaint on it; Cancel answers 0, Reset puts the reset values back, Enter moves to the next field and from the last answers, and the fields tell a phone keyboard so (Next, and Done on the last, as the matrix writer's cells and the command line's Go do); the sheet goes with its dialog and the banner's Fill in reopens it");
   assert(/dismiss\(\) \{\s*if \(this\.kind === 'inform'\) this\.app\.cancelInform\(\);\s*else this\.close\(\);/.test(sheetsSrc)
     && /if \(e\.target === this\.el\) this\.dismiss\(\);/.test(sheetsSrc) && /case 'close': this\.dismiss\(\); return;/.test(sheetsSrc)
-    && /if \(this\.sheets\.isOpen\(\)\) \{ this\.sheets\.back\(\); return true; \}/.test(appSrc)
-    && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.back\(\)\]/.test(appSrc)
+    && closesFirst('esc', { sheets: true, error: true }) === 'sheets.back' && closesFirst('back', { sheets: true, error: true }) === 'sheets.back'
     && /back\(\) \{[^}]*?else this\.dismiss\(\);\n  \}/.test(sheetsSrc),
     'INFORM: the form put away by its X, Escape, the back button or a tap beside it cancels, answering 0 as the HP\'s CANCEL and ON do, where the program stayed halted with the form gone');
   assert(/\.st-row:is\(\.culprit, \.arg, \.ghost\):not\(\.sel\) \{ grid-template-columns: 34px auto minmax\(0, 1fr\); \}\s*\.st-row:is\(\.culprit, \.arg, \.ghost\):not\(\.sel\) \.st-tag \{ position: static; transform: none; \}/.test(css),
@@ -3160,7 +3161,8 @@ setAngle('RAD');
     'Variables: on a focused variable, Shift+Enter stores level 1 in it and Alt+Enter recalls it, as the HP\'s shifted VAR keys and Shift+F1 and Alt+F1 on the soft keys do');
   assert(drawerSrc.includes("${n}: ${value.type === TYPES.PROGRAM ? 'run it' : 'put it on the stack'} · Shift+Enter stores level 1 into it · Alt+Enter recalls without running · Delete purges it"),
     'Variables: a row\'s tooltip reads as its VAR soft key\'s does (run it or put it on the stack, store, recall), with the drawer\'s keys, where it said only "click to put on the stack"');
-  assert(/closest\?\.\('\.pl-box'\)\) \{ this\.focusInput\(\); return true; \}\s*(\/\/[^\n]*\n\s*)*if \(document\.activeElement\?\.closest\?\.\('#drawer'\)\) \{\s*if \(this\._drawerCoversStack\(\)\) this\.drawers\.close\(\);\s*else this\.focusInput\(\);\s*return true;\s*\}\s*(\/\/[^\n]*\n\s*)*if \(this\.entry\.error\)/.test(appSrc),
+  assert(closesFirst('esc', { focus: '#drawer', error: true, selection: 1, buffer: 'x' }) === 'focusInput'
+    && closesFirst('esc', { focus: '#drawer', covers: true, error: true, writer: true, buffer: 'x' }) === 'drawers.close',
     'Esc in a drawer docked beside the stack takes the keyboard back to the command line and leaves the drawer open, and one over the stack closes, before Esc reaches an error, a writer, the selection or the command line');
   assert(/const hadFocus = this\.el\.contains\(document\.activeElement\) && !globalThis\.matchMedia\?\.\('\(pointer: coarse\)'\)\.matches;[\s\S]{0,200}if \(hadFocus\) this\.app\.focusInput\(\);/.test(drawerSrc),
     'drawer: closing it with the keyboard inside, by Ctrl+\\ or its close button, hands the keyboard to the command line where it was left on nothing; not on a touch screen, whose keyboard it would raise');
@@ -4255,6 +4257,33 @@ setAngle('RAD');
 
 // Reset everything, run against a recording store: what it did, in order, and the keys it removed.
 // Runs a program and reports whether it parked a halt record of `kind`, with a dialog when one is due.
+// Which step of the shared Esc and back-button list puts something away first, for a stand-in app in the given state.
+function closesFirst(via, state) {
+  const calls = [];
+  const flag = (name) => ({ isOpen: () => !!state[name], close: () => calls.push(`${name}.close`), back: () => calls.push(`${name}.back`) });
+  const app = {
+    _offScreen: state._offScreen ? { click: () => calls.push('wake') } : null,
+    _running: () => !!state.running, popover: flag('popover'), palette: flag('palette'), sheets: flag('sheets'),
+    drawers: flag('drawers'), plotFocus: !!state.plotFocus, _drawerCoversStack: () => !!state.covers,
+    entry: { error: state.error ? {} : null, buffer: state.buffer ?? '' }, inputMode: state.writer ? 'equation' : 'rpl',
+    pendingEdit: state.pendingEdit ?? null, selection: state.selection ?? null, shift: state.shift ?? null,
+  };
+  for (const name of ['stopProgram', 'setPlotFocus', 'focusInput', 'dismissError', 'cancelWriter', 'cancelEdit', 'clearSelection', 'clearLine', 'setShift']) {
+    app[name] = () => calls.push(name);
+  }
+  const savedDoc = globalThis.document;
+  const savedHalt = calcState.halted;
+  globalThis.document = { activeElement: { closest: (sel) => (sel === state.focus ? {} : null) } };
+  if (state.paused) calcState.halted = { kind: 'halt', paused: true };
+  try {
+    topOverlay(app, via)?.close(app);
+  } finally {
+    globalThis.document = savedDoc;
+    calcState.halted = savedHalt;
+  }
+  return calls[0] ?? null;
+}
+
 function parkedRecord(src) {
   const depth = calcState.haltedStack.length;
   const st = new Stack();
@@ -4332,8 +4361,7 @@ const resetRun = await (async () => {
   const view = fake('view');
   Sheets.prototype.back.call(view);
   assert(view.closed, 'back from a sheet without levels closes it');
-  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/if \(this\.sheets\.isOpen\(\)\) \{ this\.sheets\.back\(\); return true; \}/.test(appSrc) && /\[\(\) => this\.sheets\.isOpen\(\), \(\) => this\.sheets\.back\(\)\],/.test(appSrc),
+  assert(closesFirst('esc', { sheets: true, selection: 1 }) === 'sheets.back' && closesFirst('back', { sheets: true, selection: 1 }) === 'sheets.back',
     'Escape and the phone\'s back button ask the open sheet to go back, where its Close button and a tap outside still close it');
 }
 
@@ -4809,8 +4837,8 @@ const resetRun = await (async () => {
   const entrySrc = readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8');
   assert(appSrc.includes('setRunSlice(RUN_SLICE_MS);') && appSrc.includes('this.entry.busy = () => this._running();'),
     'running: the app asks the evaluator to pause a long program and tells the entry line when one runs');
-  assert(/_escape\(\) \{\n\s*if \(this\.stopProgram\(\)\) return true;/.test(appSrc)
-    && appSrc.includes('[() => this._running(), () => this.stopProgram()],')
+  assert(closesFirst('esc', { running: true, popover: true, error: true }) === 'stopProgram' && closesFirst('esc', { paused: true, popover: true }) === 'stopProgram'
+    && closesFirst('back', { running: true, popover: true }) === 'stopProgram' && closesFirst('back', { paused: true }) === null
     && /if \(act === 'kill' && \(kind === 'slice' \|\| calcState\.halted\?\.paused\)\) \{ this\.stopProgram\(\); return; \}/.test(appSrc),
     'running: Esc and the keypad\'s ON, the back button and the banner\'s Stop key (on a running or a paused program) all stop the program');
   assert(/_handleKey\(key, \{ standard = false \} = \{\}\) \{\n\s*if \(this\._running\(\)\) \{\n\s*if \(key\.primary === 'ON' && !this\.shift\) this\.stopProgram\(\);\n\s*return;/.test(appSrc)

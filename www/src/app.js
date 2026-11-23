@@ -49,6 +49,7 @@ import { mesMenu, solverNames } from './rpl/ops/root.js';
 import { plotSettings } from './rpl/ops/graphics.js';
 import { alongOpenName } from './ui/plot-engine.js';
 import { LEVEL_OPS, LEVEL_RANGE_OPS } from './ui/level-ops.js';
+import { topOverlay } from './ui/overlays.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic, isValidHpIdentifier, isReservedHpName,
@@ -3233,26 +3234,7 @@ class App {
   }
 
   _escape() {
-    if (this.stopProgram()) return true;
-    if (this.popover.isOpen()) { this.popover.close(); return true; }
-    if (this.sheets.isOpen()) { this.sheets.back(); return true; }
-    if (this.plotFocus) { this.setPlotFocus(false); return true; }
-    if (document.activeElement?.closest?.('.pl-box')) { this.focusInput(); return true; }
-    // Esc in the drawer leaves it, and leaves the stack and the command line behind it as they were; one docked beside
-    // the stack stays open.
-    if (document.activeElement?.closest?.('#drawer')) {
-      if (this._drawerCoversStack()) this.drawers.close();
-      else this.focusInput();
-      return true;
-    }
-    // From here Esc clears in the back button's order.
-    if (this.entry.error) { this.dismissError(); return true; }
-    if (this.inputMode !== 'rpl') { this.cancelWriter(); return true; }
-    if (this._drawerCoversStack()) { this.drawers.close(); return true; }
-    if (this.pendingEdit) { this.cancelEdit(); return true; }
-    if (this.selection != null) { this.clearSelection(); return true; }
-    if (this.entry.buffer.length) { this.clearLine(); return true; }
-    if (this.shift) this.setShift(null);
+    topOverlay(this, 'esc')?.close(this);
     return true;
   }
 
@@ -3312,21 +3294,7 @@ class App {
 
   // A phone's back button closes the top overlay before it leaves the app: an overlay holds one history entry.
   _installBackButton() {
-    const overlays = [
-      // As the HP's ON wakes it from OFF and clears an error message, so does a phone's back button.
-      [() => !!this._offScreen, () => this._offScreen.click()],
-      [() => this._running(), () => this.stopProgram()],
-      [() => this.popover.isOpen(), () => this.popover.close()],
-      [() => this.palette.isOpen(), () => this.palette.close()],
-      [() => this.sheets.isOpen(), () => this.sheets.back()],
-      [() => !!this.entry.error, () => this.dismissError()],
-      [() => this.inputMode !== 'rpl', () => this.cancelWriter()],
-      [() => this._drawerCoversStack(), () => this.drawers.close()],
-      // As the HP's ON cancels an edit and leaves the interactive stack, so does a phone's back button.
-      [() => !!this.pendingEdit, () => this.cancelEdit()],
-      [() => this.selection != null, () => this.clearSelection()],
-    ];
-    const top = () => overlays.find(([isOpen]) => isOpen());
+    const top = () => topOverlay(this, 'back');
     let ignorePop = false;
     const sync = () => {
       if (ignorePop) return;
@@ -3336,7 +3304,7 @@ class App {
     };
     window.addEventListener('popstate', () => {
       if (ignorePop) { ignorePop = false; return; }
-      top()?.[1]();
+      top()?.close(this);
       sync();
     });
     for (const type of ['click', 'keyup', 'pointerup']) document.addEventListener(type, () => setTimeout(sync), true);
