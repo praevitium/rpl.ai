@@ -2929,7 +2929,8 @@ setAngle('RAD');
   assert(/this\.entry\.recall\(halted\.dialog\.text\);\s*if \(halted\.dialog\.cursor != null\) this\.entry\.cursor = halted\.dialog\.cursor;/.test(appSrc),
     "INPUT: the HP's cursor position (n from the left, or { row col }, 0 the end of the row) places the cursor in the offered text");
   assert(/_endDialog\(\) \{\s*if \(this\._dialogAlpha\) \{ this\._dialogAlpha = false; if \(this\.shift === 'alphaLock'\) this\.setShift\(null\); \}/.test(appSrc)
-    && /const named = \(id\) => v\.items\.some\(\(item\) => isName\(item\) && item\.id === id\);\s*return \{ text, verify: named\('V'\), cursor: pos \? inputCursor\(text, pos\) : null, alpha: named\('α'\) \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
+    && parkedDialog('« "Q" { "ab" V α } INPUT »')?.alpha === true && parkedDialog('« "Q" { "ab" V α } INPUT »')?.verify === true
+    && parkedDialog('« "Q" "ab" INPUT »')?.alpha === false,
     "INPUT's α locks alpha on the keypad while the program waits, and the lock goes when the dialog ends unless it was on already");
 }
 
@@ -4254,14 +4255,23 @@ setAngle('RAD');
 
 // Reset everything, run against a recording store: what it did, in order, and the keys it removed.
 // Runs a program and reports whether it parked a halt record of `kind`, with a dialog when one is due.
-function parks(src, kind, dialog = false) {
+function parkedRecord(src) {
   const depth = calcState.haltedStack.length;
   const st = new Stack();
   st.push(parseEntry(src)[0]);
   lookup('EVAL').fn(st);
   const record = calcState.haltedStack.length > depth ? calcState.halted : null;
   while (calcState.haltedStack.length > depth) clearHalted();
+  return record;
+}
+
+function parks(src, kind, dialog = false) {
+  const record = parkedRecord(src);
   return record?.kind === kind && !!record.dialog === dialog;
+}
+
+function parkedDialog(src) {
+  return parkedRecord(src)?.dialog;
 }
 
 const resetRun = await (async () => {
