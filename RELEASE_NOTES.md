@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.14 (2026-11-23)
+**Latest release:** v0.9.15 (2026-11-23)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.15 — 2026-11-23
+
+- Changed: nothing a user sees. EVAL's rewrite of LN of a negative
+  number in complex mode and its check for a 1/0 left in a result moved
+  from `ops/internal.js` to a new `ops/sym-eval.js`, the first piece of
+  the symbolic evaluator to leave that file.
 
 ## v0.9.14 — 2026-11-23
 
