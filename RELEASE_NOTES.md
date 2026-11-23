@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.13 (2026-11-23)
+**Latest release:** v0.9.14 (2026-11-23)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.14 — 2026-11-23
+
+- Changed: nothing a user sees. Esc and a phone's back button now read
+  one ordered list of what to put away (`ui/overlays.js`), so the two
+  cannot drift apart again.
 
 ## v0.9.13 — 2026-11-23
 
