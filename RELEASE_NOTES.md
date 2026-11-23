@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.10 (2026-11-22)
+**Latest release:** v0.9.11 (2026-11-22)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.11 — 2026-11-22
+
+- Changed: nothing a user sees. The double-precision helpers (the float
+  matrix inverse, the Frobenius norm and the complex arithmetic used by
+  polynomial roots and trig) moved from `ops/internal.js` to
+  `ops/numeric.js`, the third step of splitting that file.
 
 ## v0.9.10 — 2026-11-22
 
