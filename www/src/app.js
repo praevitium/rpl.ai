@@ -3245,13 +3245,14 @@ class App {
       else this.focusInput();
       return true;
     }
-    if (this.selection != null) { this.clearSelection(); return true; }
+    // From here Esc clears in the back button's order.
     if (this.entry.error) { this.dismissError(); return true; }
     if (this.inputMode !== 'rpl') { this.cancelWriter(); return true; }
+    if (this._drawerCoversStack()) { this.drawers.close(); return true; }
     if (this.pendingEdit) { this.cancelEdit(); return true; }
+    if (this.selection != null) { this.clearSelection(); return true; }
     if (this.entry.buffer.length) { this.clearLine(); return true; }
-    if (this.shift) { this.setShift(null); return true; }
-    if (this._drawerCoversStack()) this.drawers.close();
+    if (this.shift) this.setShift(null);
     return true;
   }
 

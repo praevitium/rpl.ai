@@ -404,7 +404,7 @@ On Windows and Linux, ⌘ is Ctrl and ⌥ is Alt.
 | Tab | Complete a command or variable name; next box or next cell in the writers |
 | `↑` · `↓` with completions showing | Put the next or previous completion in the line, so Enter runs it; Esc puts back what you typed |
 | Enter in the matrix writer | Stores the cell and moves on, as the HP's ENTER (down the column with GO↓ on); on a cell you haven't typed in it pushes the matrix, so `1` Enter `2` Enter Enter enters `[[ 1 2 ]]` · ⇧Enter next row · `⌘Enter` pushes the matrix from any cell · Esc puts back the cell you are typing · `⌘Home` `⌘End` first and last cell |
-| Esc | Close, deselect, dismiss, or cancel with Undo; in the drawer, out of it to the command line, closing a drawer over the stack and leaving the line as it was |
+| Esc | Close, dismiss, cancel with Undo, or deselect, in the same order as a phone's back button (an error, a writer, a drawer over the stack, an edit, then the selection), and then clear the line; in the drawer, out of it to the command line, closing a drawer over the stack and leaving the line as it was |
 
 Hold ⌥ (Alt) to see each keypad key's keyboard shortcut.
 
