@@ -7560,3 +7560,18 @@ function _arrayEq(a, b) {
     && format(numeric.exactXroot(Integer(-8n), 3n)) === '-2' && numeric.exactXroot(Integer(2n), 3n) === null,
     'ops/numeric.js: √12 is 2*√3, √(1/4) is 1/2, the cube root of -8 is -2 and of 2 is not exact');
 }
+
+{
+  const numeric = await import('../www/src/rpl/ops/numeric.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  const { Integer, Rational, Complex } = await import('../www/src/rpl/types.js');
+  assert(['_numVal', '_decimalFrobeniusNorm', '_invMatrixNumeric', '_cx', '_cxAdd', '_cxSub', '_cxMul', '_cxDiv'].every((name) => internal[name] === numeric[name]),
+    'ops/numeric.js: internal.js passes on the double-precision helpers unchanged');
+  const inv = numeric._invMatrixNumeric([[Integer(2n), Integer(0n)], [Integer(0n), Rational(1n, 4n)]]).flat().map((x) => x.value.toNumber());
+  const q = numeric._cxDiv(numeric._cxMul(numeric._cx(1, 2), numeric._cx(3, -1)), numeric._cx(3, -1));
+  assert(numeric._numVal(Rational(3n, 4n)) === 0.75 && inv.join() === '0.5,0,0,4'
+    && numeric._decimalFrobeniusNorm([Integer(3n), Complex(0, 4)]).toNumber() === 5
+    && Math.abs(q.re - 1) < 1e-12 && Math.abs(q.im - 2) < 1e-12,
+    'ops/numeric.js: _numVal(3/4), the inverse of [[2 0][0 1/4]], the norm of {3 4i} and (1+2i)(3-i)/(3-i) come out right');
+  assertThrows(() => numeric._cxDiv(numeric._cx(1, 0), numeric._cx(0, 0)), 'Infinite result', 'ops/numeric.js: _cxDiv by zero is an Infinite result');
+}

@@ -1,7 +1,8 @@
-// Exact roots and square-root arithmetic, factorials, Γ and the incomplete gamma function. internal.js passes them on
-// to the command files.
+// Exact roots and square-root arithmetic, factorials, Γ, the incomplete gamma function and double-precision matrix and
+// complex helpers. internal.js passes them on to the command files.
+import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
-import { isInteger, Integer, Rational, Symbolic } from '../types.js';
+import { isInteger, isReal, isRational, isComplex, Integer, Real, Rational, Symbolic } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { Num as AstNum, Bin as AstBin, Fn as AstFn, Neg as AstNeg, exactRational } from '../algebra.js';
 
@@ -234,4 +235,85 @@ export function _regGammaQ(a, x) {
     if (Math.abs(delta - 1) < 1e-16) break;
   }
   return h * Math.exp(-x + a * Math.log(x) - _lngamma(a));
+}
+
+export function _numVal(v) {
+  if (isReal(v))     return v.value.toNumber();
+  if (isInteger(v))  return Number(v.value);
+  if (isRational(v)) return Number(v.n) / Number(v.d);
+  throw new RPLError('Bad argument type');
+}
+
+export function _decimalFrobeniusNorm(items) {
+  let sum = new Decimal(0);
+  for (const x of items) {
+    if (isComplex(x)) { sum = sum.plus(new Decimal(x.re).pow(2)).plus(new Decimal(x.im).pow(2)); continue; }
+    const d = isReal(x) ? x.value
+      : isInteger(x) ? new Decimal(x.value.toString())
+      : isRational(x) ? new Decimal(x.n.toString()).div(x.d.toString())
+      : null;
+    if (!d) throw new RPLError('Bad argument type');
+    sum = sum.plus(d.times(d));
+  }
+  return sum.sqrt();
+}
+
+export function _invMatrixNumeric(rows) {
+  const n = rows.length;
+  for (const row of rows) {
+    if (row.length !== n) throw new RPLError('Invalid dimension');
+    for (const x of row) {
+      if (!isReal(x) && !isInteger(x) && !isRational(x)) throw new RPLError('Bad argument type');
+    }
+  }
+  const a = rows.map(row => row.map(_numVal));
+  const I = [];
+  for (let i = 0; i < n; i++) {
+    const row = new Array(n).fill(0);
+    row[i] = 1;
+    I.push(row);
+  }
+  for (let k = 0; k < n; k++) {
+    let best = k, bestAbs = Math.abs(a[k][k]);
+    for (let i = k + 1; i < n; i++) {
+      const v = Math.abs(a[i][k]);
+      if (v > bestAbs) { best = i; bestAbs = v; }
+    }
+    if (bestAbs === 0) throw new RPLError('Infinite result');
+    if (best !== k) {
+      [a[k], a[best]] = [a[best], a[k]];
+      [I[k], I[best]] = [I[best], I[k]];
+    }
+    const piv = a[k][k];
+    for (let j = 0; j < n; j++) { a[k][j] /= piv; I[k][j] /= piv; }
+    for (let i = 0; i < n; i++) {
+      if (i === k) continue;
+      const f = a[i][k];
+      if (f === 0) continue;
+      for (let j = 0; j < n; j++) {
+        a[i][j] -= f * a[k][j];
+        I[i][j] -= f * I[k][j];
+      }
+    }
+  }
+  return I.map(row => row.map(x => Real(x)));
+}
+
+export function _cx(re, im) { return { re, im }; }
+
+export function _cxAdd(a, b) { return { re: a.re + b.re, im: a.im + b.im }; }
+
+export function _cxSub(a, b) { return { re: a.re - b.re, im: a.im - b.im }; }
+
+export function _cxMul(a, b) {
+  return { re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re };
+}
+
+export function _cxDiv(a, b) {
+  const d = b.re * b.re + b.im * b.im;
+  if (d === 0) throw new RPLError('Infinite result');
+  return {
+    re: (a.re * b.re + a.im * b.im) / d,
+    im: (a.im * b.re - a.re * b.im) / d,
+  };
 }
