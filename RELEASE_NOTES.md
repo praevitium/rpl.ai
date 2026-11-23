@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.12 (2026-11-22)
+**Latest release:** v0.9.13 (2026-11-23)
 
 ---
 
@@ -20,6 +20,15 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.13 — 2026-11-23
+
+- Changed: Esc now goes in the same order as a phone's back button. With
+  a stack level selected, Esc dismisses an error, puts a writer away and
+  cancels an edit before it clears the selection, where it used to clear
+  the selection first. A drawer over the stack now closes before Esc
+  cancels an edit or clears the command line, where it used to close
+  last.
 
 ## v0.9.12 — 2026-11-22
 
