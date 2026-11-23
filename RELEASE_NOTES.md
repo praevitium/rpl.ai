@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.11 (2026-11-22)
+**Latest release:** v0.9.12 (2026-11-22)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.12 — 2026-11-22
+
+- Changed: nothing a user sees. The argument checks for the INPUT, CHOOSE,
+  WAIT and INFORM dialogs moved from `ops/internal.js` to a new
+  `ops/interp.js`, the first piece of the program interpreter to leave
+  that file.
 
 ## v0.9.11 — 2026-11-22
 
