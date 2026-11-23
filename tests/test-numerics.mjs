@@ -7575,3 +7575,20 @@ function _arrayEq(a, b) {
     'ops/numeric.js: _numVal(3/4), the inverse of [[2 0][0 1/4]], the norm of {3 4i} and (1+2i)(3-i)/(3-i) come out right');
   assertThrows(() => numeric._cxDiv(numeric._cx(1, 0), numeric._cx(0, 0)), 'Infinite result', 'ops/numeric.js: _cxDiv by zero is an Infinite result');
 }
+
+{
+  const symEval = await import('../www/src/rpl/ops/sym-eval.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  const { Num, Bin, Fn, Var } = await import('../www/src/rpl/algebra.js');
+  assert(internal._exactLnNegative === symEval._exactLnNegative,
+    'ops/sym-eval.js: internal.js passes on _exactLnNegative unchanged');
+  const lnHalf = symEval._exactLnNegative(1n, 2n);
+  assert(symEval._exactLnNegative(1n, 1n).kind === 'bin' && lnHalf.op === '+' && lnHalf.l.name === 'LN',
+    'ops/sym-eval.js: LN(-1) is i*π and LN(-1/2) is LN(1/2)+i*π');
+  assertThrows(() => symEval._checkInfinite(Bin('+', Var('X'), Bin('/', Num(1), Num(0)))), 'Infinite result',
+    'ops/sym-eval.js: a 1/0 left inside a result is an Infinite result');
+  assertThrows(() => symEval._checkInfinite(Bin('/', Num(0), Num(0))), 'Undefined result',
+    'ops/sym-eval.js: a 0/0 left in a result is an Undefined result');
+  symEval._checkInfinite(Fn('SIN', [Bin('/', Var('X'), Num(0))]));
+  assert(true, 'ops/sym-eval.js: X/0 with a name on top is left alone');
+}

@@ -14,9 +14,11 @@ import { astToGiac, buildGiacCmd, giacToAst, splitGiacList } from '../cas/giac-c
 import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 import { inputSpec, chooseSpec, waitSpec, informSpec } from './interp.js';
+import { _complexLnRewrite, _checkInfinite, _isLeaf } from './sym-eval.js';
 import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal } from './numeric.js';
 
 export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv } from './numeric.js';
+export { _exactLnNegative } from './sym-eval.js';
 
 
 
@@ -1873,33 +1875,6 @@ function _foldImaginary(ast) {
 }
 
 
-const _I_PI = AstBin('*', AstVar('i'), AstVar('π'));
-
-// In exact mode with complex results on, LN of the negative exact number
-// -n/d is LN(n/d) plus i*π, so LN(-1) is 'i*π' as on the HP.
-export function _exactLnNegative(n, d) {
-  if (n === d) return _I_PI;
-  const size = d === 1n ? AstNum(n) : AstBin('/', AstNum(n), AstNum(d));
-  return AstBin('+', AstFn('LN', [size]), _I_PI);
-}
-
-function _complexLnRewrite(ast) {
-  if (!getComplexMode() || !ast || typeof ast !== 'object') return ast;
-  if (ast.kind === 'neg') {
-    const arg = _complexLnRewrite(ast.arg);
-    return arg === ast.arg ? ast : AstNeg(arg);
-  }
-  if (ast.kind === 'bin') {
-    const l = _complexLnRewrite(ast.l), r = _complexLnRewrite(ast.r);
-    return l === ast.l && r === ast.r ? ast : AstBin(ast.op, l, r);
-  }
-  if (ast.kind !== 'fn') return ast;
-  const args = ast.args.map(_complexLnRewrite);
-  const exact = ast.name === 'LN' && args.length === 1 ? exactRational(args[0]) : null;
-  if (exact && exact[0] < 0n) return _exactLnNegative(-exact[0], exact[1]);
-  return args.every((a, i) => a === ast.args[i]) ? ast : AstFn(ast.name, args);
-}
-
 
 // EVAL hands an expression still holding ∞ or ? to the CAS, which knows the AUR's ATAN(-∞) is -π/2 and 1/∞ is 0;
 // an undefined answer, such as ∞-∞ or anything worked out from ?, is ?.
@@ -1981,21 +1956,6 @@ function _infiniteTop(ast) {
   if (op === '^' && num(l) && l.value === 0 && ((num(r) && r.value < 0) || (r?.kind === 'neg' && num(r.arg)))) return _infiniteResult(negated);
   return null;
 }
-
-// A division by zero left in the result raises the HP's error, not a 1/0 to keep.
-function _checkInfinite(ast) {
-  if (ast.kind === 'neg') return _checkInfinite(ast.arg);
-  if (ast.kind === 'fn') return ast.args.forEach(_checkInfinite);
-  if (ast.kind !== 'bin') return;
-  _checkInfinite(ast.l);
-  _checkInfinite(ast.r);
-  const zero = (a) => a.kind === 'num' && a.value === 0;
-  const negative = (a) => (a.kind === 'num' && a.value < 0) || (a.kind === 'neg' && a.arg.kind === 'num');
-  if (ast.op === '/' && _isLeaf(ast.l) && zero(ast.r)) throw _divisionByZero(zero(ast.l));
-  if (ast.op === '^' && zero(ast.l) && negative(ast.r)) throw new RPLError('Infinite result');
-}
-
-const _isLeaf = (a) => a.kind === 'num' || a.kind === 'unit';
 
 // What the commands make of numbers and units, worked on a stack of their own: 2_m*3 is 6_m.
 function _applyToLeaves(name, args) {
