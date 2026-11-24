@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.16 (2026-11-23)
+**Latest release:** v0.9.17 (2026-11-23)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.17 — 2026-11-23
+
+- Changed: nothing a user sees. EVAL's hand-off of derivatives and
+  integrals to the CAS, the HP's dn derivatives (d1SIN(2*X)) and the
+  substitution of values into an expression moved from `ops/internal.js`
+  to `ops/sym-eval.js`.
 
 ## v0.9.16 — 2026-11-23
 
