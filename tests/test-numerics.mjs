@@ -7638,3 +7638,17 @@ function _arrayEq(a, b) {
     clearUserFlag(-22);
   }
 }
+
+{
+  const symEval = await import('../www/src/rpl/ops/sym-eval.js');
+  const { Num, Bin, UnitNode } = await import('../www/src/rpl/algebra.js');
+  const { Symbolic } = await import('../www/src/rpl/types.js');
+  const { format } = await import('../www/src/rpl/formatter.js');
+  const m = (v) => UnitNode(v, [['m', 1]]);
+  const folded = symEval._foldUnits(Bin('*', m(2), Num(3)), (a) => a);
+  assert(folded.kind === 'unit' && folded.value === 6, 'ops/sym-eval.js: 2_m*3 inside an expression folds to 6_m');
+  assertThrows(() => symEval._foldUnits(Bin('+', m(2), UnitNode(3, [['s', 1]])), (a) => a), 'Inconsistent units',
+    'ops/sym-eval.js: 2_m+3_s inside an expression is Inconsistent units');
+  const plain = Bin('+', Num(1), Num(2));
+  assert(symEval._foldUnits(plain, (a) => a) === plain && format(Symbolic(plain)) !== '', 'ops/sym-eval.js: an expression without units is left to evalNode');
+}

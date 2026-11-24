@@ -14,7 +14,7 @@ import { astToGiac, buildGiacCmd, giacToAst, splitGiacList } from '../cas/giac-c
 import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 import { inputSpec, chooseSpec, waitSpec, informSpec } from './interp.js';
-import { _complexLnRewrite, _checkInfinite, _isLeaf, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute, _infiniteTop } from './sym-eval.js';
+import { _complexLnRewrite, _checkInfinite, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute, _infiniteTop, _foldUnits } from './sym-eval.js';
 import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal, _infiniteResult } from './numeric.js';
 
 export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv, _infiniteResult } from './numeric.js';
@@ -1804,32 +1804,6 @@ function _evalCommandCalls(ast) {
   }
 }
 
-
-// What the commands make of numbers and units, worked on a stack of their own: 2_m*3 is 6_m.
-function _applyToLeaves(name, args) {
-  const s = new Stack();
-  for (const a of args) s.push(_astToRplValue(a));
-  lookup(name).fn(s);
-  return _toAst(s.pop());
-}
-
-// Unit arithmetic inside an algebraic is left to the commands, so it converts
-// and checks units exactly as they do on the stack; Inconsistent units stops EVAL.
-// A part whose units cancel, or an IFTE test they decide, goes back to evalNode.
-function _foldUnits(ast, evalNode) {
-  if (ast.kind === 'unit' || !hasUnits(ast)) return ast;
-  if (ast.kind === 'fn' && ast.name === 'IFTE' && ast.args.length === 3) {
-    const test = _foldUnits(ast.args[0], evalNode);
-    if (test.kind === 'num') return _foldUnits(evalNode(test.value !== 0 ? ast.args[1] : ast.args[2]), evalNode);
-  }
-  const fold = (a) => _foldUnits(a, evalNode);
-  const args = ast.kind === 'bin' ? [fold(ast.l), fold(ast.r)] : ast.kind === 'neg' ? [fold(ast.arg)] : ast.args.map(fold);
-  const rebuilt = ast.kind === 'bin' ? AstBin(ast.op, ...args) : ast.kind === 'neg' ? AstNeg(args[0]) : AstFn(ast.name, args);
-  if (!args.some((a) => a.kind === 'unit')) return args.some(hasUnits) ? rebuilt : evalNode(rebuilt);
-  const name = ast.kind === 'bin' ? ast.op : ast.kind === 'neg' ? 'NEG' : ast.name;
-  if (!args.every(_isLeaf) || name === '=' || !lookup(name)) return rebuilt;
-  return _applyToLeaves(name, args) ?? rebuilt;
-}
 
 // A function DEFINE made, « → X Y `body` », taking `arity` arguments: its names and body.
 function _definedFunction(name, arity) {
