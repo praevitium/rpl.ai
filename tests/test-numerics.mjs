@@ -7592,3 +7592,18 @@ function _arrayEq(a, b) {
   symEval._checkInfinite(Fn('SIN', [Bin('/', Var('X'), Num(0))]));
   assert(true, 'ops/sym-eval.js: X/0 with a name on top is left alone');
 }
+
+{
+  const symEval = await import('../www/src/rpl/ops/sym-eval.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  const { Num, Bin, Var } = await import('../www/src/rpl/algebra.js');
+  const { Rational } = await import('../www/src/rpl/types.js');
+  const { format } = await import('../www/src/rpl/formatter.js');
+  assert(internal._toAst === symEval._toAst && internal._astToRplValue === symEval._astToRplValue,
+    'ops/sym-eval.js: internal.js passes on _toAst and _astToRplValue unchanged');
+  assert(format(symEval._astToRplValue(symEval._toAst(Rational(3n, 4n)))) === '3/4',
+    'ops/sym-eval.js: 3/4 goes to a tree and back as 3/4');
+  assert(format(symEval._foldImaginary(Bin('+', Num(3), Bin('*', Num(4), Var('i'))))) === '(3, 4)'
+    && symEval._foldImaginary(Bin('+', Var('X'), Var('i'))) === null,
+    'ops/sym-eval.js: 3+4*i folds to (3,4) and X+i stays symbolic');
+}

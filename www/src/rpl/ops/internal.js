@@ -14,11 +14,11 @@ import { astToGiac, buildGiacCmd, giacToAst, splitGiacList } from '../cas/giac-c
 import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 import { inputSpec, chooseSpec, waitSpec, informSpec } from './interp.js';
-import { _complexLnRewrite, _checkInfinite, _isLeaf } from './sym-eval.js';
+import { _complexLnRewrite, _checkInfinite, _isLeaf, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues } from './sym-eval.js';
 import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal } from './numeric.js';
 
 export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv } from './numeric.js';
-export { _exactLnNegative } from './sym-eval.js';
+export { _exactLnNegative, _toAst, _astToRplValue } from './sym-eval.js';
 
 
 
@@ -41,38 +41,6 @@ export const FALSE = Real(0);
 
 export function _isSymOperand(v) {
   return isSymbolic(v) || isName(v);
-}
-
-
-// null for values the algebra AST cannot hold, such as Complex.
-export function _toAst(v) {
-  if (isSymbolic(v))   return v.expr;
-  if (isName(v))       return AstVar(v.id);
-  if (isInteger(v))    return AstNum(v.value);
-  if (isReal(v))       return AstNum(v.value.toNumber(), true);
-  if (isRational(v)) {
-    return AstBin('/', AstNum(v.n), AstNum(v.d));
-  }
-  if (isUnit(v))       return AstUnit(v.value, v.uexpr);
-  return null;
-}
-
-
-function _numToRpl(n, sign = 1) {
-  if (n.digits) return Integer(BigInt(sign) * BigInt(n.digits));
-  return isRealNum(n) ? Real(sign * n.value) : Integer(BigInt(sign * n.value));
-}
-
-export function _astToRplValue(ast) {
-  if (!ast) return Name('', { quoted: true });
-  if (ast.kind === 'num') return _numToRpl(ast);
-  if (ast.kind === 'unit') return Unit(ast.value, ast.uexpr);
-  if (ast.kind === 'var') return isArrayLiteral(ast.name) ? _parseEntryForObjTo(ast.name)[0] : Name(ast.name, { quoted: true });
-  // Giac returns negative literals as Neg(Num); land them as plain numbers.
-  if (ast.kind === 'neg' && ast.arg && ast.arg.kind === 'num') return _numToRpl(ast.arg, -1);
-  const fraction = exactRational(ast);
-  if (fraction && fraction[1] !== 1n) return Rational(fraction[0], fraction[1]);
-  return Symbolic(ast);
 }
 
 
@@ -1842,56 +1810,6 @@ function _evalCommandCalls(ast) {
   }
 }
 
-
-// The algebra evaluator holds real numbers only, so →NUM and APPROX work an expression that holds i out with the commands
-// themselves: '3+4*i' gives (3,4), as '3+4*π' gives a real, and so does a closed expression it left because its value is not
-// real, 'SQRT(-4)' or 'LN(-1)'. Anything else left in it keeps the whole expression symbolic.
-const _IMAGINARY_OPS = new Set(['+', '-', '*', '/', '^']);
-const _IMAGINARY_FUNCTIONS = new Set(['ABS', 'ARG', 'RE', 'IM', 'CONJ', 'SQRT', 'SQ', 'INV', 'EXP', 'LN', 'LOG', 'ALOG', 'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN', 'SINH', 'COSH', 'TANH', 'ASINH', 'ACOSH', 'ATANH']);
-
-function _foldImaginary(ast) {
-  const names = algebraFreeVars(ast);
-  const plain = ast.kind === 'num' || (ast.kind === 'neg' && ast.arg.kind === 'num');
-  if (!names.has('i') && (names.size > 0 || plain)) return null;
-  const walk = (node) => {
-    if (node.kind === 'num') return _numToRpl(node);
-    if (node.kind === 'var' && node.name === 'i') return Complex(0, 1);
-    const call = node.kind === 'neg' ? ['NEG', [node.arg]]
-      : node.kind === 'bin' && _IMAGINARY_OPS.has(node.op) ? [node.op, [node.l, node.r]]
-        : node.kind === 'fn' && _IMAGINARY_FUNCTIONS.has(node.name.toUpperCase()) ? [node.name.toUpperCase(), node.args] : null;
-    if (!call) throw new RPLError('Bad argument type');
-    const s = new Stack();
-    call[1].forEach((arg) => s.push(walk(arg)));
-    lookup(call[0]).fn(s);
-    return s.pop();
-  };
-  try {
-    const value = walk(ast);
-    return isNumber(value) ? value : null;
-  } catch (e) {
-    if (e instanceof RPLError) return null;
-    throw e;
-  }
-}
-
-
-
-// EVAL hands an expression still holding ∞ or ? to the CAS, which knows the AUR's ATAN(-∞) is -π/2 and 1/∞ is 0;
-// an undefined answer, such as ∞-∞ or anything worked out from ?, is ?.
-function _casSpecialValues(ast) {
-  const bare = ast.kind === 'neg' ? ast.arg : ast;
-  const names = algebraFreeVars(ast);
-  if (bare.kind === 'var' || (!names.has('∞') && !names.has('?')) || hasUnits(ast) || !giac.isReady()) return ast;
-  let raw;
-  try {
-    raw = casRun(buildGiacCmd(ast, (e) => e));
-  } catch (e) {
-    if (e instanceof RPLError) return ast;
-    throw e;
-  }
-  if (raw.trim() === 'undef') return AstVar('?');
-  return /\bundef\b/.test(raw) ? ast : giacToAst(raw);
-}
 
 // EVAL hands a derivative or integral it still holds to the CAS, as the HP does; one the CAS cannot work out stays as it is.
 const CAS_CALCULUS = { DERIV: { arity: 2, op: 'DERIV' }, INTEG: { arity: 2, op: 'INTEG' } };
