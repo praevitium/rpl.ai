@@ -7607,3 +7607,16 @@ function _arrayEq(a, b) {
     && symEval._foldImaginary(Bin('+', Var('X'), Var('i'))) === null,
     'ops/sym-eval.js: 3+4*i folds to (3,4) and X+i stays symbolic');
 }
+
+{
+  const symEval = await import('../www/src/rpl/ops/sym-eval.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  const { Num, Bin, Fn, Var } = await import('../www/src/rpl/algebra.js');
+  const { Symbolic } = await import('../www/src/rpl/types.js');
+  const { format } = await import('../www/src/rpl/formatter.js');
+  assert(internal._substitute === symEval._substitute, 'ops/sym-eval.js: internal.js passes on _substitute unchanged');
+  const put = symEval._substitute(Fn('SIN', [Bin('*', Num(2), Var('X'))]), new Map([['X', Bin('+', Var('A'), Num(1))]]));
+  assert(format(Symbolic(put)) === '`SIN(2*(A + 1))`', 'ops/sym-eval.js: _substitute puts A+1 in place of X inside SIN(2*X)');
+  const plain = Bin('+', Var('X'), Num(1));
+  assert(symEval._casCalculus(plain) === plain, 'ops/sym-eval.js: an expression holding no derivative or integral comes back as it was');
+}

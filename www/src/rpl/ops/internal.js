@@ -14,11 +14,11 @@ import { astToGiac, buildGiacCmd, giacToAst, splitGiacList } from '../cas/giac-c
 import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 import { inputSpec, chooseSpec, waitSpec, informSpec } from './interp.js';
-import { _complexLnRewrite, _checkInfinite, _isLeaf, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues } from './sym-eval.js';
+import { _complexLnRewrite, _checkInfinite, _isLeaf, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute } from './sym-eval.js';
 import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal } from './numeric.js';
 
 export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv } from './numeric.js';
-export { _exactLnNegative, _toAst, _astToRplValue } from './sym-eval.js';
+export { _exactLnNegative, _toAst, _astToRplValue, _substitute } from './sym-eval.js';
 
 
 
@@ -1811,59 +1811,6 @@ function _evalCommandCalls(ast) {
 }
 
 
-// EVAL hands a derivative or integral it still holds to the CAS, as the HP does; one the CAS cannot work out stays as it is.
-const CAS_CALCULUS = { DERIV: { arity: 2, op: 'DERIV' }, INTEG: { arity: 2, op: 'INTEG' } };
-
-function _casCalculus(ast) {
-  if (ast.kind === 'neg') {
-    const arg = _casCalculus(ast.arg);
-    return arg === ast.arg ? ast : AstNeg(arg);
-  }
-  if (ast.kind === 'bin') {
-    const l = _casCalculus(ast.l), r = _casCalculus(ast.r);
-    return l === ast.l && r === ast.r ? ast : AstBin(ast.op, l, r);
-  }
-  if (ast.kind !== 'fn') return ast;
-  const args = ast.args.map(_casCalculus);
-  const rebuilt = args.every((a, i) => a === ast.args[i]) ? ast : AstFn(ast.name, args);
-  const dn = _DN_FUNCTION.exec(ast.name);
-  if (dn && isKnownFunction(dn[2])) return _dnDerivative(dn[1].match(/\d+/g).map(Number), dn[2], args) ?? rebuilt;
-  const definite = ast.name === 'INTEG' && args.length === 4;
-  const form = definite ? { arity: 4, op: '∫' } : CAS_CALCULUS[ast.name];
-  if (!form || args.length !== form.arity || args[1].kind !== 'var') return rebuilt;
-  const s = new Stack();
-  try {
-    if (definite) for (const a of [args[2], args[3]]) s.push(_astToRplValue(a));
-    s.push(Symbolic(args[0]));
-    s.push(Name(args[1].name));
-    lookup(form.op).fn(s);
-    return _toAst(s.pop());
-  } catch {
-    return rebuilt;
-  }
-}
-
-// The HP's dn: d1SIN(2*X) is SIN differentiated in its first argument, COS(2*X), and d1d1 differentiates twice.
-const _DN_FUNCTION = /^((?:d\d+)+)([A-Za-z].*)$/;
-
-function _dnDerivative(orders, name, args) {
-  if (orders.some((n) => n > args.length)) return null;
-  const slots = args.map((_, i) => `rplD${i + 1}`);
-  const s = new Stack();
-  try {
-    let expr = AstFn(name, slots.map((slot) => AstVar(slot)));
-    for (const n of orders) {
-      s.push(Symbolic(expr));
-      s.push(Name(slots[n - 1]));
-      lookup('DERIV').fn(s);
-      expr = _toAst(s.pop());
-    }
-    return _substitute(expr, new Map(slots.map((slot, i) => [slot, args[i]])));
-  } catch {
-    return null;
-  }
-}
-
 // With flag -22 set, a result that is itself x/0 or 0^-n is ±MAXR, as on the stack. Deeper in an expression, such as
 // SIN(1/0), it stays an error rather than a wrong value.
 function _infiniteTop(ast) {
@@ -1914,15 +1861,6 @@ function _definedFunction(name, arity) {
   return shaped ? { names: names.map((n) => n.id), expr: body.expr } : null;
 }
 
-export function _substitute(ast, bindings) {
-  switch (ast.kind) {
-    case 'var': return bindings.get(ast.name) ?? ast;
-    case 'neg': return AstNeg(_substitute(ast.arg, bindings));
-    case 'bin': return AstBin(ast.op, _substitute(ast.l, bindings), _substitute(ast.r, bindings));
-    case 'fn': return AstFn(ast.name, ast.args.map((a) => _substitute(a, bindings)));
-    default: return ast;
-  }
-}
 
 // F(A+1) becomes F's body with A+1 in place of its argument, as EVAL does on
 // the HP 50g.  A call back into a function being expanded is left for the

@@ -6,7 +6,7 @@ import { RPLError, Stack } from '../stack.js';
 import { getComplexMode } from '../state.js';
 import {
   Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, Neg as AstNeg, UnitNode as AstUnit, exactRational, isRealNum,
-  isArrayLiteral, freeVars as algebraFreeVars, hasUnits,
+  isArrayLiteral, freeVars as algebraFreeVars, hasUnits, isKnownFunction,
 } from '../algebra.js';
 import { parseEntry as _parseEntryForObjTo } from '../parser.js';
 import { buildGiacCmd, giacToAst } from '../cas/giac-convert.mjs';
@@ -135,4 +135,67 @@ export function _checkInfinite(ast) {
   const negative = (a) => (a.kind === 'num' && a.value < 0) || (a.kind === 'neg' && a.arg.kind === 'num');
   if (ast.op === '/' && _isLeaf(ast.l) && zero(ast.r)) throw _divisionByZero(zero(ast.l));
   if (ast.op === '^' && zero(ast.l) && negative(ast.r)) throw new RPLError('Infinite result');
+}
+
+export function _substitute(ast, bindings) {
+  switch (ast.kind) {
+    case 'var': return bindings.get(ast.name) ?? ast;
+    case 'neg': return AstNeg(_substitute(ast.arg, bindings));
+    case 'bin': return AstBin(ast.op, _substitute(ast.l, bindings), _substitute(ast.r, bindings));
+    case 'fn': return AstFn(ast.name, ast.args.map((a) => _substitute(a, bindings)));
+    default: return ast;
+  }
+}
+
+// EVAL hands a derivative or integral it still holds to the CAS, as the HP does; one the CAS cannot work out stays as it is.
+const CAS_CALCULUS = { DERIV: { arity: 2, op: 'DERIV' }, INTEG: { arity: 2, op: 'INTEG' } };
+
+export function _casCalculus(ast) {
+  if (ast.kind === 'neg') {
+    const arg = _casCalculus(ast.arg);
+    return arg === ast.arg ? ast : AstNeg(arg);
+  }
+  if (ast.kind === 'bin') {
+    const l = _casCalculus(ast.l), r = _casCalculus(ast.r);
+    return l === ast.l && r === ast.r ? ast : AstBin(ast.op, l, r);
+  }
+  if (ast.kind !== 'fn') return ast;
+  const args = ast.args.map(_casCalculus);
+  const rebuilt = args.every((a, i) => a === ast.args[i]) ? ast : AstFn(ast.name, args);
+  const dn = _DN_FUNCTION.exec(ast.name);
+  if (dn && isKnownFunction(dn[2])) return _dnDerivative(dn[1].match(/\d+/g).map(Number), dn[2], args) ?? rebuilt;
+  const definite = ast.name === 'INTEG' && args.length === 4;
+  const form = definite ? { arity: 4, op: '∫' } : CAS_CALCULUS[ast.name];
+  if (!form || args.length !== form.arity || args[1].kind !== 'var') return rebuilt;
+  const s = new Stack();
+  try {
+    if (definite) for (const a of [args[2], args[3]]) s.push(_astToRplValue(a));
+    s.push(Symbolic(args[0]));
+    s.push(Name(args[1].name));
+    lookup(form.op).fn(s);
+    return _toAst(s.pop());
+  } catch {
+    return rebuilt;
+  }
+}
+
+// The HP's dn: d1SIN(2*X) is SIN differentiated in its first argument, COS(2*X), and d1d1 differentiates twice.
+const _DN_FUNCTION = /^((?:d\d+)+)([A-Za-z].*)$/;
+
+function _dnDerivative(orders, name, args) {
+  if (orders.some((n) => n > args.length)) return null;
+  const slots = args.map((_, i) => `rplD${i + 1}`);
+  const s = new Stack();
+  try {
+    let expr = AstFn(name, slots.map((slot) => AstVar(slot)));
+    for (const n of orders) {
+      s.push(Symbolic(expr));
+      s.push(Name(slots[n - 1]));
+      lookup('DERIV').fn(s);
+      expr = _toAst(s.pop());
+    }
+    return _substitute(expr, new Map(slots.map((slot, i) => [slot, args[i]])));
+  } catch {
+    return null;
+  }
 }
