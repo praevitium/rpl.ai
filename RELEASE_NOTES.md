@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.15 (2026-11-23)
+**Latest release:** v0.9.16 (2026-11-23)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.16 — 2026-11-23
+
+- Changed: nothing a user sees. Turning values into expression trees and
+  back, the fold of a closed expression holding i, and EVAL's hand-off of
+  ∞ and ? to the CAS moved from `ops/internal.js` to `ops/sym-eval.js`.
 
 ## v0.9.15 — 2026-11-23
 
