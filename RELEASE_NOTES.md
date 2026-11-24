@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.17 (2026-11-23)
+**Latest release:** v0.9.18 (2026-11-24)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.18 — 2026-11-24
+
+- Changed: nothing a user sees. The ±MAXR answer that flag -22 gives for
+  an infinite result moved from `ops/internal.js` to `ops/numeric.js`,
+  and EVAL's check for a result that is itself x/0 to `ops/sym-eval.js`.
 
 ## v0.9.17 — 2026-11-23
 
