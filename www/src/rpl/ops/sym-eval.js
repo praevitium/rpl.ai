@@ -12,7 +12,7 @@ import { parseEntry as _parseEntryForObjTo } from '../parser.js';
 import { buildGiacCmd, giacToAst } from '../cas/giac-convert.mjs';
 import { giac, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
-import { _divisionByZero } from './numeric.js';
+import { _divisionByZero, _infiniteResult } from './numeric.js';
 
 // null for values the algebra AST cannot hold, such as Complex.
 export function _toAst(v) {
@@ -198,4 +198,15 @@ function _dnDerivative(orders, name, args) {
   } catch {
     return null;
   }
+}
+
+// With flag -22 set, a result that is itself x/0 or 0^-n is ±MAXR, as on the stack. Deeper in an expression, such as
+// SIN(1/0), it stays an error rather than a wrong value.
+export function _infiniteTop(ast) {
+  const negated = ast.kind === 'neg';
+  const { op, l, r } = negated ? ast.arg : ast;
+  const num = (a) => a?.kind === 'num';
+  if (op === '/' && num(l) && l.value !== 0 && num(r) && r.value === 0) return _infiniteResult(negated !== l.value < 0);
+  if (op === '^' && num(l) && l.value === 0 && ((num(r) && r.value < 0) || (r?.kind === 'neg' && num(r.arg)))) return _infiniteResult(negated);
+  return null;
 }

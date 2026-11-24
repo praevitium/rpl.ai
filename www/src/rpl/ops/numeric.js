@@ -4,6 +4,7 @@ import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
 import { isInteger, isReal, isRational, isComplex, Integer, Real, Rational, Symbolic } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
+import { testUserFlag, getRealMaxExp } from '../state.js';
 import { Num as AstNum, Bin as AstBin, Fn as AstFn, Neg as AstNeg, exactRational } from '../algebra.js';
 
 // The HP holds an object in its memory, a few million digits or cells at most; a bigger one is not worth a frozen page.
@@ -316,4 +317,10 @@ export function _cxDiv(a, b) {
     re: (a.re * b.re + a.im * b.im) / d,
     im: (a.im * b.re - a.re * b.im) / d,
   };
+}
+
+// With flag -22 set, as the AUR has it, an infinite result is ±MAXR instead of an Infinite result error.
+export function _infiniteResult(negative = false) {
+  if (!testUserFlag(-22)) throw new RPLError('Infinite result');
+  return Real(new Decimal(`${negative ? '-' : ''}9.99999999999e+${getRealMaxExp()}`));
 }

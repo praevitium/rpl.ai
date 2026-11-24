@@ -7620,3 +7620,21 @@ function _arrayEq(a, b) {
   const plain = Bin('+', Var('X'), Num(1));
   assert(symEval._casCalculus(plain) === plain, 'ops/sym-eval.js: an expression holding no derivative or integral comes back as it was');
 }
+
+{
+  const numeric = await import('../www/src/rpl/ops/numeric.js');
+  const symEval = await import('../www/src/rpl/ops/sym-eval.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  const { setUserFlag, clearUserFlag } = await import('../www/src/rpl/state.js');
+  const { Num, Bin, Neg } = await import('../www/src/rpl/algebra.js');
+  assert(internal._infiniteResult === numeric._infiniteResult, 'ops/numeric.js: internal.js passes on _infiniteResult unchanged');
+  assertThrows(() => numeric._infiniteResult(), 'Infinite result', 'ops/numeric.js: with flag -22 clear an infinite result is an error');
+  setUserFlag(-22);
+  try {
+    assert(numeric._infiniteResult(true).value.lt(0) && symEval._infiniteTop(Neg(Bin('/', Num(1), Num(0)))).value.lt(0)
+      && symEval._infiniteTop(Bin('+', Num(1), Num(0))) === null,
+      'ops/sym-eval.js: with flag -22 set, -(1/0) is -MAXR and 1+0 is no infinite result');
+  } finally {
+    clearUserFlag(-22);
+  }
+}

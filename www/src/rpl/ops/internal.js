@@ -14,10 +14,10 @@ import { astToGiac, buildGiacCmd, giacToAst, splitGiacList } from '../cas/giac-c
 import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 import { inputSpec, chooseSpec, waitSpec, informSpec } from './interp.js';
-import { _complexLnRewrite, _checkInfinite, _isLeaf, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute } from './sym-eval.js';
-import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal } from './numeric.js';
+import { _complexLnRewrite, _checkInfinite, _isLeaf, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute, _infiniteTop } from './sym-eval.js';
+import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal, _infiniteResult } from './numeric.js';
 
-export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv } from './numeric.js';
+export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv, _infiniteResult } from './numeric.js';
 export { _exactLnNegative, _toAst, _astToRplValue, _substitute } from './sym-eval.js';
 
 
@@ -68,12 +68,6 @@ export function _symbolicDecompose(v) {
 export function _makeUnit(value, uexpr) {
   if (!Number.isFinite(value)) throw new RPLError('Infinite result');
   return uexpr.length === 0 ? Real(value) : Unit(value, uexpr);
-}
-
-// With flag -22 set, as the AUR has it, an infinite result is ±MAXR instead of an Infinite result error.
-export function _infiniteResult(negative = false) {
-  if (!testUserFlag(-22)) throw new RPLError('Infinite result');
-  return Real(new Decimal(`${negative ? '-' : ''}9.99999999999e+${getRealMaxExp()}`));
 }
 
 
@@ -1810,17 +1804,6 @@ function _evalCommandCalls(ast) {
   }
 }
 
-
-// With flag -22 set, a result that is itself x/0 or 0^-n is ±MAXR, as on the stack. Deeper in an expression, such as
-// SIN(1/0), it stays an error rather than a wrong value.
-function _infiniteTop(ast) {
-  const negated = ast.kind === 'neg';
-  const { op, l, r } = negated ? ast.arg : ast;
-  const num = (a) => a?.kind === 'num';
-  if (op === '/' && num(l) && l.value !== 0 && num(r) && r.value === 0) return _infiniteResult(negated !== l.value < 0);
-  if (op === '^' && num(l) && l.value === 0 && ((num(r) && r.value < 0) || (r?.kind === 'neg' && num(r.arg)))) return _infiniteResult(negated);
-  return null;
-}
 
 // What the commands make of numbers and units, worked on a stack of their own: 2_m*3 is 6_m.
 function _applyToLeaves(name, args) {
