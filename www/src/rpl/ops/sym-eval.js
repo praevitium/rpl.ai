@@ -1,7 +1,7 @@
 // The symbolic evaluator, split out of internal.js a piece at a time. Here: turning values into expression trees and
 // back, and the rewrites EVAL makes of a tree that need no evaluator state, such as LN of a negative number in complex
 // mode, a closed expression holding i, ∞ or ? and the check for a 1/0 left in a result.
-import { isSymbolic, isName, isInteger, isReal, isRational, isUnit, isNumber, Name, Integer, Real, Rational, Unit, Symbolic, Complex } from '../types.js';
+import { isSymbolic, isName, isInteger, RList, isReal, isRational, isUnit, isNumber, Name, Integer, Real, Rational, Unit, Symbolic, Complex } from '../types.js';
 import { RPLError, Stack } from '../stack.js';
 import { getComplexMode } from '../state.js';
 import {
@@ -235,4 +235,54 @@ export function _foldUnits(ast, evalNode) {
   const name = ast.kind === 'bin' ? ast.op : ast.kind === 'neg' ? 'NEG' : ast.name;
   if (!args.every(_isLeaf) || name === '=' || !lookup(name)) return rebuilt;
   return _applyToLeaves(name, args) ?? rebuilt;
+}
+
+// EVAL leaves IFTE, INTEG, DERIV and Σ for their own rules rather than running them as commands on their arguments.
+export const _LAZY_FUNCTIONS = new Set(['IFTE', 'INTEG', 'DERIV', 'Σ', 'SUM']);
+
+// A command called with parentheses in a formula, 'FACTOR(X^2+5*X+6)', runs on its arguments when the formula is evaluated, as
+// the HP's algebraic parser has it; a command that leaves several results gives them as a list, as the AUR's examples show.
+// The commands that only turn their arguments into a result are callable; stack, memory and display commands are not. A call the
+// command cannot work out, 'COMB(N,2)' with N unknown, leaves the formula as it was; with only values for arguments, as in
+// '[1,2]*[3,4,5]', the command's own error stands. Any function given a matrix, vector or list to work on, 'ABS([3,4])', is a call
+// too, since the algebra evaluator cannot take that.
+export const _isArrayLiteral = (node) => node.kind === 'var' && isArrayLiteral(node.name);
+const _isCommandCall = (node) => {
+  const command = node.kind === 'fn' && !_LAZY_FUNCTIONS.has(node.name.toUpperCase()) && lookup(node.name);
+  return !!command && (command.callable || node.args.some(_isArrayLiteral));
+};
+
+function _holdsCommandCall(node) {
+  if (node.kind === 'fn') return _isCommandCall(node) || node.args.some(_holdsCommandCall);
+  if (node.kind === 'bin') return _holdsCommandCall(node.l) || _holdsCommandCall(node.r);
+  return node.kind === 'neg' ? _holdsCommandCall(node.arg) : _isArrayLiteral(node);
+}
+
+export function _evalCommandCalls(ast) {
+  if (!_holdsCommandCall(ast)) return null;
+  const run = (name, args) => {
+    if (!lookup(name) || args.includes(undefined)) return undefined;
+    const s = new Stack();
+    args.forEach((arg) => s.push(arg));
+    try {
+      lookup(name).fn(s);
+    } catch (e) {
+      // With every argument a value, the command's own error is the answer, as in RPN: [1,2]*[3,4,5] says Invalid dimension.
+      if (e instanceof RPLError && !args.some((arg) => isName(arg) || isSymbolic(arg))) e.concrete = true;
+      throw e;
+    }
+    return s.depth === 1 ? s.pop() : RList(s.snapshot().reverse());
+  };
+  const walk = (node) => {
+    if (!_holdsCommandCall(node) || node.kind === 'var') return _astToRplValue(node);
+    if (node.kind === 'neg') return run('NEG', [walk(node.arg)]);
+    if (node.kind === 'bin') return run(node.op, [walk(node.l), walk(node.r)]);
+    return run(node.name, node.args.map(walk));
+  };
+  try {
+    return walk(ast) ?? null;
+  } catch (e) {
+    if (e instanceof RPLError && !e.concrete) return null;
+    throw e;
+  }
 }

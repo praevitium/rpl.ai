@@ -14,7 +14,7 @@ import { astToGiac, buildGiacCmd, giacToAst, splitGiacList } from '../cas/giac-c
 import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 import { inputSpec, chooseSpec, waitSpec, informSpec } from './interp.js';
-import { _complexLnRewrite, _checkInfinite, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute, _infiniteTop, _foldUnits } from './sym-eval.js';
+import { _complexLnRewrite, _checkInfinite, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute, _infiniteTop, _foldUnits, _evalCommandCalls, _isArrayLiteral, _LAZY_FUNCTIONS } from './sym-eval.js';
 import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal, _infiniteResult } from './numeric.js';
 
 export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv, _infiniteResult } from './numeric.js';
@@ -1727,7 +1727,6 @@ export function _evalSymbolic(v, keeps = () => false, gather = true) {
 // Null when no variable holds one, or a name has no value to work with, and the expression goes on as it was.
 const _OBJECT_OPS = new Set(['+', '-', '*', '/', '^']);
 const _OBJECT_FUNCTIONS = new Set(['DET', 'INV', 'TRN', 'SQ', 'TRACE', 'CNRM', 'RNRM', 'DOT', 'CROSS', 'RANK']);
-const _LAZY_FUNCTIONS = new Set(['IFTE', 'INTEG', 'DERIV', 'Σ', 'SUM']);
 const _isObjectValue = (v) => isComplex(v) || isList(v) || isVector(v) || isMatrix(v);
 
 function _evalObjects(ast, keeps) {
@@ -1754,54 +1753,6 @@ function _evalObjects(ast, keeps) {
     return s.depth === 1 ? s.pop() : undefined;
   };
   return walk(ast) ?? null;
-}
-
-
-// A command called with parentheses in a formula, 'FACTOR(X^2+5*X+6)', runs on its arguments when the formula is evaluated, as
-// the HP's algebraic parser has it; a command that leaves several results gives them as a list, as the AUR's examples show.
-// The commands that only turn their arguments into a result are callable; stack, memory and display commands are not. A call the
-// command cannot work out, 'COMB(N,2)' with N unknown, leaves the formula as it was; with only values for arguments, as in
-// '[1,2]*[3,4,5]', the command's own error stands. Any function given a matrix, vector or list to work on, 'ABS([3,4])', is a call
-// too, since the algebra evaluator cannot take that.
-const _isArrayLiteral = (node) => node.kind === 'var' && isArrayLiteral(node.name);
-const _isCommandCall = (node) => {
-  const command = node.kind === 'fn' && !_LAZY_FUNCTIONS.has(node.name.toUpperCase()) && lookup(node.name);
-  return !!command && (command.callable || node.args.some(_isArrayLiteral));
-};
-
-function _holdsCommandCall(node) {
-  if (node.kind === 'fn') return _isCommandCall(node) || node.args.some(_holdsCommandCall);
-  if (node.kind === 'bin') return _holdsCommandCall(node.l) || _holdsCommandCall(node.r);
-  return node.kind === 'neg' ? _holdsCommandCall(node.arg) : _isArrayLiteral(node);
-}
-
-function _evalCommandCalls(ast) {
-  if (!_holdsCommandCall(ast)) return null;
-  const run = (name, args) => {
-    if (!lookup(name) || args.includes(undefined)) return undefined;
-    const s = new Stack();
-    args.forEach((arg) => s.push(arg));
-    try {
-      lookup(name).fn(s);
-    } catch (e) {
-      // With every argument a value, the command's own error is the answer, as in RPN: [1,2]*[3,4,5] says Invalid dimension.
-      if (e instanceof RPLError && !args.some((arg) => isName(arg) || isSymbolic(arg))) e.concrete = true;
-      throw e;
-    }
-    return s.depth === 1 ? s.pop() : RList(s.snapshot().reverse());
-  };
-  const walk = (node) => {
-    if (!_holdsCommandCall(node) || node.kind === 'var') return _astToRplValue(node);
-    if (node.kind === 'neg') return run('NEG', [walk(node.arg)]);
-    if (node.kind === 'bin') return run(node.op, [walk(node.l), walk(node.r)]);
-    return run(node.name, node.args.map(walk));
-  };
-  try {
-    return walk(ast) ?? null;
-  } catch (e) {
-    if (e instanceof RPLError && !e.concrete) return null;
-    throw e;
-  }
 }
 
 

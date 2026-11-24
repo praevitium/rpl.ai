@@ -7652,3 +7652,13 @@ function _arrayEq(a, b) {
   const plain = Bin('+', Num(1), Num(2));
   assert(symEval._foldUnits(plain, (a) => a) === plain && format(Symbolic(plain)) !== '', 'ops/sym-eval.js: an expression without units is left to evalNode');
 }
+
+{
+  const symEval = await import('../www/src/rpl/ops/sym-eval.js');
+  const { Num, Bin, Fn, Var } = await import('../www/src/rpl/algebra.js');
+  const { format } = await import('../www/src/rpl/formatter.js');
+  assert(format(symEval._evalCommandCalls(Fn('ABS', [Var('[3,4]')]))) === '5.' && symEval._evalCommandCalls(Bin('+', Var('X'), Num(1))) === null,
+    'ops/sym-eval.js: ABS([3,4]) inside a formula runs the command, and X+1 has no command call');
+  assert(symEval._LAZY_FUNCTIONS.has('IFTE') && symEval._evalCommandCalls(Fn('IFTE', [Var('X'), Num(1), Num(2)])) === null,
+    'ops/sym-eval.js: IFTE is left for its own rule, not run as a command');
+}
