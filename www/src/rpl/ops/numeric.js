@@ -2,7 +2,7 @@
 // complex helpers. internal.js passes them on to the command files.
 import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { Fraction } from '../../../vendor/fraction.js/fraction.mjs';
-import { isInteger, isReal, isRational, isComplex, Integer, Real, Rational, Symbolic } from '../types.js';
+import { isInteger, isReal, isRational, isComplex, Integer, Real, Rational, Symbolic, toRealOrThrow } from '../types.js';
 import { RPLError, checkTimeLimit } from '../stack.js';
 import { testUserFlag, getRealMaxExp } from '../state.js';
 import { Num as AstNum, Bin as AstBin, Fn as AstFn, Neg as AstNeg, exactRational } from '../algebra.js';
@@ -323,4 +323,42 @@ export function _cxDiv(a, b) {
 export function _infiniteResult(negative = false) {
   if (!testUserFlag(-22)) throw new RPLError('Infinite result');
   return Real(new Decimal(`${negative ? '-' : ''}9.99999999999e+${getRealMaxExp()}`));
+}
+
+// HMS values are HH.MMSSss decimals: 2.3000 is 2 h 30 min, 1.4530 is 1 h 45 min 30 s.
+export function _hmsToHours(h) {
+  if (!Number.isFinite(h)) throw new RPLError('Bad argument value');
+  const sign = h < 0 ? -1 : 1;
+  const x = Math.abs(h);
+  const hh = Math.floor(x);
+  const afterPoint = (x - hh) * 100;
+  // The epsilon keeps float noise from reading 1.45 as 1 h 44 min 59.99… s.
+  const mm = Math.floor(afterPoint + 1e-9);
+  const ss = (afterPoint - mm) * 100;
+  if (mm >= 60) throw new RPLError('Bad argument value');
+  if (ss >= 60) throw new RPLError('Bad argument value');
+  return sign * (hh + mm / 60 + ss / 3600);
+}
+
+
+export function _hoursToHms(hours) {
+  if (!Number.isFinite(hours)) throw new RPLError('Bad argument value');
+  const sign = hours < 0 ? -1 : 1;
+  const x = Math.abs(hours);
+  const hh = Math.floor(x);
+  const minsPart = (x - hh) * 60;
+  const mm = Math.floor(minsPart + 1e-12);
+  const ss = (minsPart - mm) * 60;
+  const combined = hh + (mm * 100 + ss) / 10000;
+  return sign * combined;
+}
+
+
+export function _hmsUnary(name, fn) {
+  return (s) => {
+    const v = s.pop();
+    if (isComplex(v)) throw new RPLError('Bad argument type');
+    const x = toRealOrThrow(v);
+    s.push(Real(fn(x)));
+  };
 }

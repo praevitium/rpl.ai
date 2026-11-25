@@ -7671,3 +7671,14 @@ function _arrayEq(a, b) {
     'ops/sym-eval.js: π and i are constants, E is an ordinary name, and i stays out of the real-number tree while c folds to 299792458');
   assert(symEval._symConstantRpl('MAXR').value.gt(1e300), 'ops/sym-eval.js: MAXR follows the exponent limit');
 }
+
+{
+  const numeric = await import('../www/src/rpl/ops/numeric.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  assert(['_hmsToHours', '_hoursToHms', '_hmsUnary'].every((n) => internal[n] === numeric[n]),
+    'ops/numeric.js: internal.js passes on the HMS helpers unchanged');
+  assert(Math.abs(numeric._hmsToHours(2.3) - 2.5) < 1e-12 && Math.abs(numeric._hmsToHours(1.453) - (1 + 45 / 60 + 30 / 3600)) < 1e-12
+    && Math.abs(numeric._hoursToHms(2.5) - 2.3) < 1e-12,
+    'ops/numeric.js: 2.30 HMS is 2.5 hours, 1.4530 is 1 h 45 min 30 s, and 2.5 hours is 2.30 HMS');
+  assertThrows(() => numeric._hmsToHours(1.7), 'Bad argument value', 'ops/numeric.js: 1.70 has 70 minutes, a Bad argument value');
+}

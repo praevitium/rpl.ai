@@ -21,7 +21,7 @@ export { bindLocals, unbindLocals, withLocalVariable, localFramesDepth } from '.
 import { _complexLnRewrite, _checkInfinite, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute, _infiniteTop, _foldUnits, _evalCommandCalls, _isArrayLiteral, _LAZY_FUNCTIONS, _symConstantRpl, _symConstantValue } from './sym-eval.js';
 import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal, _infiniteResult } from './numeric.js';
 
-export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv, _infiniteResult } from './numeric.js';
+export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv, _infiniteResult, _hmsToHours, _hoursToHms, _hmsUnary } from './numeric.js';
 export { _exactLnNegative, _toAst, _astToRplValue, _substitute } from './sym-eval.js';
 
 
@@ -2041,45 +2041,6 @@ export function _cToROp(s) {
     return;
   }
   throw new RPLError('Bad argument type');
-}
-
-
-// HMS values are HH.MMSSss decimals: 2.3000 is 2 h 30 min, 1.4530 is 1 h 45 min 30 s.
-export function _hmsToHours(h) {
-  if (!Number.isFinite(h)) throw new RPLError('Bad argument value');
-  const sign = h < 0 ? -1 : 1;
-  const x = Math.abs(h);
-  const hh = Math.floor(x);
-  const afterPoint = (x - hh) * 100;
-  // The epsilon keeps float noise from reading 1.45 as 1 h 44 min 59.99… s.
-  const mm = Math.floor(afterPoint + 1e-9);
-  const ss = (afterPoint - mm) * 100;
-  if (mm >= 60) throw new RPLError('Bad argument value');
-  if (ss >= 60) throw new RPLError('Bad argument value');
-  return sign * (hh + mm / 60 + ss / 3600);
-}
-
-
-export function _hoursToHms(hours) {
-  if (!Number.isFinite(hours)) throw new RPLError('Bad argument value');
-  const sign = hours < 0 ? -1 : 1;
-  const x = Math.abs(hours);
-  const hh = Math.floor(x);
-  const minsPart = (x - hh) * 60;
-  const mm = Math.floor(minsPart + 1e-12);
-  const ss = (minsPart - mm) * 60;
-  const combined = hh + (mm * 100 + ss) / 10000;
-  return sign * combined;
-}
-
-
-export function _hmsUnary(name, fn) {
-  return (s) => {
-    const v = s.pop();
-    if (isComplex(v)) throw new RPLError('Bad argument type');
-    const x = toRealOrThrow(v);
-    s.push(Real(fn(x)));
-  };
 }
 
 
