@@ -7682,3 +7682,14 @@ function _arrayEq(a, b) {
     'ops/numeric.js: 2.30 HMS is 2.5 hours, 1.4530 is 1 h 45 min 30 s, and 2.5 hours is 2.30 HMS');
   assertThrows(() => numeric._hmsToHours(1.7), 'Bad argument value', 'ops/numeric.js: 1.70 has 70 minutes, a Bad argument value');
 }
+
+{
+  const numeric = await import('../www/src/rpl/ops/numeric.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  assert(internal.MAX_CELLS === numeric.MAX_CELLS && numeric.MAX_CELLS === 1_000_000, 'ops/numeric.js: internal.js passes on MAX_CELLS unchanged');
+  const sq = numeric.complexBinary('^', { re: 1, im: 1 }, { re: 2, im: 0 });
+  assert(numeric._modPow(3n, 200n, 7n) === 2n && numeric.integerBinary('^', 2n, 10n) === 1024n && sq.re === 0 && sq.im === 2,
+    'ops/numeric.js: 3^200 mod 7 is 2, 2^10 is 1024, and (1,1)^2 is exactly (0,2) by squaring');
+  assertThrows(() => numeric.integerBinary('^', 10n, 2000000n), 'Insufficient memory', 'ops/numeric.js: 10^2000000 is more digits than memory holds');
+  assertThrows(() => numeric.integerBinary('/', 0n, 0n), 'Undefined result', 'ops/numeric.js: 0/0 in integers is an Undefined result');
+}

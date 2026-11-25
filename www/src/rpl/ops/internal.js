@@ -19,9 +19,12 @@ import {
 } from './interp.js';
 export { bindLocals, unbindLocals, withLocalVariable, localFramesDepth } from './interp.js';
 import { _complexLnRewrite, _checkInfinite, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute, _infiniteTop, _foldUnits, _evalCommandCalls, _isArrayLiteral, _LAZY_FUNCTIONS, _symConstantRpl, _symConstantValue } from './sym-eval.js';
-import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal, _infiniteResult } from './numeric.js';
+import {
+  MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal, _infiniteResult, _modPow, realBinary,
+  integerBinary, _checkBigPower, _integerReciprocalPower, complexBinary,
+} from './numeric.js';
 
-export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv, _infiniteResult, _hmsToHours, _hoursToHms, _hmsUnary } from './numeric.js';
+export { MAX_INTEGER_DIGITS, _bigFactorial, _gamma, _lngamma, _regGammaQ, _radicalBinary, exactSqrt, exactXroot, _numVal, _decimalFrobeniusNorm, _invMatrixNumeric, _cx, _cxAdd, _cxSub, _cxMul, _cxDiv, _infiniteResult, _hmsToHours, _hoursToHms, _hmsUnary, MAX_CELLS } from './numeric.js';
 export { _exactLnNegative, _toAst, _astToRplValue, _substitute } from './sym-eval.js';
 
 
@@ -456,103 +459,6 @@ export function binIntBinary(op, a, b) {
   }
   return BinaryInteger(r & m, a.base);
 }
-
-
-function _modPow(x, e, n) {
-  if (n === 1n) return 0n;
-  let result = 1n;
-  let base = x % n;
-  let exp = e;
-  while (exp > 0n) {
-    if (exp & 1n) result = (result * base) % n;
-    exp >>= 1n;
-    base = (base * base) % n;
-  }
-  return result;
-}
-
-
-function realBinary(op, a, b) {
-  if (op === '/' && b.isZero()) throw _divisionByZero(a.isZero());
-  switch (op) {
-    case '+': return a.plus(b);
-    case '-': return a.minus(b);
-    case '*': return a.times(b);
-    case '/': return a.div(b);
-    case '^':
-      if (a.isZero() && b.isNegative()) throw new RPLError('Infinite result');
-      return Decimal.pow(a, b);
-  }
-  throw new RPLError('Unknown op ' + op);
-}
-
-
-// `_scalarBinary` handles inexact quotients before calling this.
-function integerBinary(op, a, b) {
-  switch (op) {
-    case '+': return a + b;
-    case '-': return a - b;
-    case '*': return a * b;
-    case '/':
-      if (b === 0n) throw _divisionByZero(a === 0n);
-      return a / b;
-    case '^':
-      return _bigPower(a, b);
-  }
-  throw new RPLError('Unknown op ' + op);
-}
-
-// As MAX_INTEGER_DIGITS does for numbers, this bounds an array or list to what the HP's memory could hold.
-export const MAX_CELLS = 1_000_000;
-
-function _checkBigPower(a, b) {
-  const mag = a < 0n ? -a : a;
-  const log10 = Number.isFinite(Number(mag)) ? Math.log10(Number(mag)) : mag.toString().length - 1;
-  if (mag > 1n && Number(b) * log10 > MAX_INTEGER_DIGITS) throw new RPLError('Insufficient memory');
-}
-
-function _bigPower(a, b) {
-  _checkBigPower(a, b);
-  return a ** b;
-}
-
-// A negative integer exponent gives an exact fraction, or a Real in APPROX mode.
-function _integerReciprocalPower(a, b) {
-  if (a === 0n) throw new RPLError('Infinite result');
-  if (getApproxMode()) return Real(Decimal.pow(new Decimal(a.toString()), new Decimal(b.toString())));
-  const denominator = _bigPower(a, -b);
-  return denominator === 1n || denominator === -1n ? Integer(denominator) : Rational(1n, denominator);
-}
-
-
-function complexBinary(op, a, b) {
-  if (op === '/' && b.re === 0 && b.im === 0) {
-    throw _divisionByZero(a.re === 0 && a.im === 0);
-  }
-  const ca = new Complex$(a);
-  const cb = new Complex$(b);
-  let r;
-  switch (op) {
-    case '+': r = ca.add(cb); break;
-    case '-': r = ca.sub(cb); break;
-    case '*': r = ca.mul(cb); break;
-    case '/': r = ca.div(cb); break;
-    case '^': r = cb.im === 0 && Number.isSafeInteger(cb.re) ? _complexIntPow(ca, cb.re) : ca.pow(cb); break;
-    default: throw new RPLError('Unknown op ' + op);
-  }
-  return { re: r.re, im: r.im };
-}
-
-// By squaring, as SQ and * do: the polar form leaves noise such as (1,1)^2 = (1.2E-16, 2).
-function _complexIntPow(z, n) {
-  let result = new Complex$(1, 0), base = z;
-  for (let k = Math.abs(n); k > 0; k = Math.floor(k / 2)) {
-    if (k % 2) result = result.mul(base);
-    base = base.mul(base);
-  }
-  return n < 0 ? result.inverse() : result;
-}
-
 
 
 const _isPowerOfTen = (n, d) => (n === 1n ? /^10*$/.test(d.toString()) : d === 1n && n > 0n && /^10*$/.test(n.toString()));
