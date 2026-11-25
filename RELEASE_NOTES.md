@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.20 (2026-11-24)
+**Latest release:** v0.9.21 (2026-11-24)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.21 — 2026-11-24
+
+- Changed: nothing a user sees. The built-in constants that APPROX and
+  →NUM fold to numbers (π, e, i, the CODATA set, MAXR and MINR) moved
+  from `ops/internal.js` to `ops/sym-eval.js`.
 
 ## v0.9.20 — 2026-11-24
 
