@@ -7662,3 +7662,12 @@ function _arrayEq(a, b) {
   assert(symEval._LAZY_FUNCTIONS.has('IFTE') && symEval._evalCommandCalls(Fn('IFTE', [Var('X'), Num(1), Num(2)])) === null,
     'ops/sym-eval.js: IFTE is left for its own rule, not run as a command');
 }
+
+{
+  const symEval = await import('../www/src/rpl/ops/sym-eval.js');
+  assert(Math.abs(symEval._symConstantRpl('π').value.toNumber() - Math.PI) < 1e-11 && symEval._symConstantRpl('i').type === 'complex'
+    && symEval._symConstantRpl('E') === undefined && symEval._symConstantValue('i') === undefined
+    && symEval._symConstantValue('c').value === 299792458,
+    'ops/sym-eval.js: π and i are constants, E is an ordinary name, and i stays out of the real-number tree while c folds to 299792458');
+  assert(symEval._symConstantRpl('MAXR').value.gt(1e300), 'ops/sym-eval.js: MAXR follows the exponent limit');
+}

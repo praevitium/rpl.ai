@@ -2,8 +2,9 @@
 // back, and the rewrites EVAL makes of a tree that need no evaluator state, such as LN of a negative number in complex
 // mode, a closed expression holding i, ∞ or ? and the check for a 1/0 left in a result.
 import { isSymbolic, isName, isInteger, RList, isReal, isRational, isUnit, isNumber, Name, Integer, Real, Rational, Unit, Symbolic, Complex } from '../types.js';
+import Decimal from '../../../vendor/decimal.js/decimal.mjs';
 import { RPLError, Stack } from '../stack.js';
-import { getComplexMode } from '../state.js';
+import { getComplexMode, getRealMaxExp } from '../state.js';
 import {
   Var as AstVar, Num as AstNum, Bin as AstBin, Fn as AstFn, Neg as AstNeg, UnitNode as AstUnit, exactRational, isRealNum,
   isArrayLiteral, freeVars as algebraFreeVars, hasUnits, isKnownFunction,
@@ -285,4 +286,68 @@ export function _evalCommandCalls(ast) {
     if (e instanceof RPLError && !e.concrete) return null;
     throw e;
   }
+}
+
+// Built-in constants, folded to numbers only under APPROX / →NUM.  Names are
+// case-sensitive, as on the HP50: e is Euler's number and E an ordinary name.
+const SYM_CONSTANTS = Object.freeze({
+  PI:   Real(Math.PI),
+  'π':  Real(Math.PI),
+  'Π':  Real(Math.PI),
+  e:    Real(Math.E),
+  i:    Complex(0, 1),
+  // CODATA 2018 values, without units.
+  c:    Real(299792458),              // speed of light, m/s (exact)
+  h:    Real(6.62607015e-34),         // Planck constant, J·s (exact)
+  'ħ':  Real(1.054571817e-34),        // reduced Planck (h / 2π)
+  G:    Real(6.67430e-11),            // gravitational constant, m³/(kg·s²)
+  g:    Real(9.80665),                // standard gravity, m/s² (exact)
+  NA:   Real(6.02214076e23),          // Avogadro, /mol (exact)
+  k:    Real(1.380649e-23),           // Boltzmann, J/K (exact)
+  R:    Real(8.314462618),            // universal gas constant, J/(mol·K)
+  Vm:   Real(0.02241396954),          // molar volume at 0 °C and 1 atm, m³/mol
+  'σ':  Real(5.670374419e-8),         // Stefan-Boltzmann, W/(m²·K⁴)
+  'ε0': Real(8.8541878128e-12),       // vacuum permittivity, F/m
+  'μ0': Real(1.25663706212e-6),       // vacuum permeability, N/A²
+  q:    Real(1.602176634e-19),        // elementary charge, C (exact)
+  me:   Real(9.1093837015e-31),       // electron rest mass, kg
+  mp:   Real(1.67262192369e-27),      // proton rest mass, kg
+  mn:   Real(1.67492749804e-27),      // neutron rest mass, kg
+  F:    Real(96485.33212),            // Faraday, C/mol (= NA·q)
+  'α':  Real(7.2973525693e-3),        // fine-structure, dimensionless
+  // No `re` (classical electron radius): it would shadow the RE command.
+  a0:   Real(5.29177210903e-11),      // Bohr radius, m
+  'μB': Real(9.2740100783e-24),       // Bohr magneton, J/T
+  'μN': Real(5.0507837461e-27),       // nuclear magneton, J/T
+  Rinf: Real(10973731.568160),        // Rydberg, /m (exact)
+  'λc': Real(2.42631023867e-12),      // Compton wavelength, m
+  'γe': Real(1.76085963023e11),       // electron gyromagnetic ratio, /(s·T)
+  Z0:   Real(376.730313668),          // impedance of free space, Ω
+  atm:  Real(101325),                 // standard atmosphere, Pa (exact)
+  T0:   Real(273.15),                 // standard temperature, K (exact)
+});
+
+export function _symConstantRpl(name) {
+  if (!name) return undefined;
+  // MAXR / MINR follow the current exponent limit (STMXE).
+  const upper = String(name).toUpperCase();
+  if (upper === 'MAXR') {
+    const e = getRealMaxExp();
+    return Real(new Decimal(`9.99999999999e+${e}`));
+  }
+  if (upper === 'MINR') {
+    const e = getRealMaxExp();
+    return Real(new Decimal(`1e-${e}`));
+  }
+  if (Object.prototype.hasOwnProperty.call(SYM_CONSTANTS, name)) {
+    return SYM_CONSTANTS[name];
+  }
+  return upper === 'PI' ? SYM_CONSTANTS.PI : undefined;
+}
+
+// The AST evaluator can only inline real numbers, so `i` stays symbolic there.
+export function _symConstantValue(name) {
+  const v = _symConstantRpl(name);
+  if (v && v.type === 'real' && v.value.isFinite()) return AstNum(v.value.toSignificantDigits(12).toNumber(), true);
+  return undefined;
 }
