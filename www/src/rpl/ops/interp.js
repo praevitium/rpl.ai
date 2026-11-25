@@ -1,6 +1,6 @@
 // The program interpreter, split out of internal.js a piece at a time. Here: the checks that turn INPUT, CHOOSE, WAIT
-// and INFORM's arguments into the dialog a halted program shows, and the scans that find a structure's THEN, ELSE and
-// END among a program's tokens.
+// and INFORM's arguments into the dialog a halted program shows, the scans that find a structure's THEN, ELSE and
+// END among a program's tokens, and the frames that hold its local variables.
 import { isReal, isInteger, isString, isList, isName, Real } from '../types.js';
 import { RPLError } from '../stack.js';
 
@@ -184,3 +184,49 @@ export function _scanCounterCloser(toks, from, label) {
   if (scan.kind === 'END') throw new RPLError(`${label} without NEXT/STEP`);
   return { closer: scan.kind, closerIdx: scan.idx };
 }
+
+
+// Local variables: the frames → and LOCAL push, innermost last, which a name inside a program reaches before the
+// directory's.
+export const _localFrames = [];
+
+// LOCAL's frames, oldest first; they stay in _localFrames after the run that made them, until UNBIND.
+export const _boundFrames = [];
+
+export function bindLocals(pairs) {
+  const frame = new Map(pairs);
+  _localFrames.push(frame);
+  _boundFrames.push(frame);
+}
+
+// Every variable LOCAL made, newest first, as [name, value].
+export function unbindLocals() {
+  const frames = _boundFrames.splice(0).filter((f) => _localFrames.includes(f));
+  frames.forEach((f) => _localFrames.splice(_localFrames.lastIndexOf(f), 1));
+  return frames.reverse().flatMap((f) => [...f].reverse());
+}
+
+
+export function _localFrame(id) {
+  for (let i = _localFrames.length - 1; i >= 0; i--) {
+    if (_localFrames[i].has(id)) return _localFrames[i];
+  }
+  return undefined;
+}
+
+export function _localLookup(id) {
+  return _localFrame(id)?.get(id);
+}
+
+// fn runs with the name bound as a local variable, set through the function it is given, as a plot binds its variable.
+export function withLocalVariable(name, fn) {
+  const frame = new Map([[name, null]]);
+  _localFrames.push(frame);
+  try {
+    return fn((value) => frame.set(name, value));
+  } finally {
+    _localFrames.splice(_localFrames.lastIndexOf(frame), 1);
+  }
+}
+
+export function localFramesDepth() { return _localFrames.length; }

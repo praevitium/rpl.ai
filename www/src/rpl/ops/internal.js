@@ -15,8 +15,9 @@ import { giac, requireCas, casRun } from '../cas/giac-engine.mjs';
 import { lookup } from './registry.js';
 import {
   inputSpec, chooseSpec, waitSpec, informSpec, CF_OPENERS, CF_CLOSERS, CF_INNERS, bareNameId, scanAtDepth0, _pastCaseEnd, _pastBlock, _scanRequired,
-  _scanEnd, _scanElseEnd, _scanCounterCloser,
+  _scanEnd, _scanElseEnd, _scanCounterCloser, _localFrames, _boundFrames, _localFrame, _localLookup,
 } from './interp.js';
+export { bindLocals, unbindLocals, withLocalVariable, localFramesDepth } from './interp.js';
 import { _complexLnRewrite, _checkInfinite, _toAst, _numToRpl, _astToRplValue, _foldImaginary, _casSpecialValues, _casCalculus, _substitute, _infiniteTop, _foldUnits, _evalCommandCalls, _isArrayLiteral, _LAZY_FUNCTIONS, _symConstantRpl, _symConstantValue } from './sym-eval.js';
 import { MAX_INTEGER_DIGITS, _divisionByZero, _fractionValue, _exactPower, _radicalBinary, exactSqrt, _numVal, _infiniteResult } from './numeric.js';
 
@@ -675,36 +676,6 @@ export function runProgramLine(s, values) {
 }
 
 
-const _localFrames = [];
-
-// LOCAL's frames, oldest first; they stay in _localFrames after the run that made them, until UNBIND.
-const _boundFrames = [];
-
-export function bindLocals(pairs) {
-  const frame = new Map(pairs);
-  _localFrames.push(frame);
-  _boundFrames.push(frame);
-}
-
-// Every variable LOCAL made, newest first, as [name, value].
-export function unbindLocals() {
-  const frames = _boundFrames.splice(0).filter((f) => _localFrames.includes(f));
-  frames.forEach((f) => _localFrames.splice(_localFrames.lastIndexOf(f), 1));
-  return frames.reverse().flatMap((f) => [...f].reverse());
-}
-
-
-function _localFrame(id) {
-  for (let i = _localFrames.length - 1; i >= 0; i--) {
-    if (_localFrames[i].has(id)) return _localFrames[i];
-  }
-  return undefined;
-}
-
-function _localLookup(id) {
-  return _localFrame(id)?.get(id);
-}
-
 // STO, RCL and the other commands that take a variable's name reach a local
 // variable first, as on the HP50.
 export function recallVar(id) {
@@ -717,17 +688,6 @@ export function storeVar(id, value) {
   if (!frame) { varStore(id, value); return; }
   frame.set(id, value);
   if (_calcState.halted && _runDepth === 0) notify();
-}
-
-// fn runs with the name bound as a local variable, set through the function it is given, as a plot binds its variable.
-export function withLocalVariable(name, fn) {
-  const frame = new Map([[name, null]]);
-  _localFrames.push(frame);
-  try {
-    return fn((value) => frame.set(name, value));
-  } finally {
-    _localFrames.splice(_localFrames.lastIndexOf(frame), 1);
-  }
 }
 
 
@@ -745,7 +705,6 @@ export function singleStepMode() { return _singleStepMode; }
 
 export function stepIntoMode() { return _stepInto; }
 
-export function localFramesDepth() { return _localFrames.length; }
 
 // What a halted program can still see of its local variables: each name once, as the program would resolve it, innermost first.
 export function haltedLocals() {

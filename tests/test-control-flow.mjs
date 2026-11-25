@@ -7880,3 +7880,14 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
     'ops/interp.js: the ELSE scan from IF A THEN skips a whole CASE and finds the IF\'s own ELSE');
   assert(interp._scanElseEnd(toks, 2, 'IF').endIdx === toks.length - 1, 'ops/interp.js: the IF\'s END is its last token');
 }
+
+{
+  const interp = await import('../www/src/rpl/ops/interp.js');
+  const internal = await import('../www/src/rpl/ops/internal.js');
+  assert(['bindLocals', 'unbindLocals', 'withLocalVariable', 'localFramesDepth'].every((n) => internal[n] === interp[n]),
+    'ops/interp.js: internal.js passes on the local-variable frame functions unchanged');
+  const depth = interp.localFramesDepth();
+  const seen = interp.withLocalVariable('Q', (set) => { set(7); return [interp._localLookup('Q'), interp.localFramesDepth()]; });
+  assert(seen[0] === 7 && seen[1] === depth + 1 && interp.localFramesDepth() === depth && interp._localLookup('Q') === undefined,
+    'ops/interp.js: withLocalVariable binds the name for the call only and takes its frame away after');
+}
