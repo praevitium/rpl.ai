@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.22 (2026-11-24)
+**Latest release:** v0.9.23 (2026-11-25)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.23 — 2026-11-25
+
+- Changed: nothing a user sees. The frames that hold a program's local
+  variables (made by → and LOCAL) moved from `ops/internal.js` to
+  `ops/interp.js`.
 
 ## v0.9.22 — 2026-11-24
 
