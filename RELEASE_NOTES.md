@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.24 (2026-11-25)
+**Latest release:** v0.9.25 (2026-11-25)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.25 — 2026-11-25
+
+- Changed: nothing a user sees. The plain arithmetic on reals, integers
+  and complex numbers (with modular power and the guard that refuses a
+  power too big for memory) moved from `ops/internal.js` to
+  `ops/numeric.js`.
 
 ## v0.9.24 — 2026-11-25
 
