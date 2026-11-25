@@ -7870,3 +7870,13 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
   });
   assert(kinds.every(Boolean), 'HALT, PROMPT, MSGBOX and WAIT park a record of their own kind');
 }
+
+{
+  const interp = await import('../www/src/rpl/ops/interp.js');
+  const { parseEntry: parse } = await import('../www/src/rpl/parser.js');
+  const toks = parse('« IF A THEN CASE B THEN 1 END END ELSE 2 END »')[0].tokens;
+  const scan = interp.scanAtDepth0(toks, 2, 'ELSE');
+  assert(interp.bareNameId(toks[0]) === 'IF' && scan.kind === 'ELSE' && toks[scan.idx].id === 'ELSE',
+    'ops/interp.js: the ELSE scan from IF A THEN skips a whole CASE and finds the IF\'s own ELSE');
+  assert(interp._scanElseEnd(toks, 2, 'IF').endIdx === toks.length - 1, 'ops/interp.js: the IF\'s END is its last token');
+}

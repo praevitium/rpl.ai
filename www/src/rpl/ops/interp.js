@@ -1,5 +1,6 @@
 // The program interpreter, split out of internal.js a piece at a time. Here: the checks that turn INPUT, CHOOSE, WAIT
-// and INFORM's arguments into the dialog a halted program shows.
+// and INFORM's arguments into the dialog a halted program shows, and the scans that find a structure's THEN, ELSE and
+// END among a program's tokens.
 import { isReal, isInteger, isString, isList, isName, Real } from '../types.js';
 import { RPLError } from '../stack.js';
 
@@ -67,4 +68,119 @@ export function informSpec(title, fields, format, resets, init) {
     return { label: label.value, help, types: rest.map((t) => Number(t.value)) };
   });
   return { title: title.value, fields: spec, columns: columns === undefined ? 1 : Math.max(1, Math.trunc(Number(columns.value))), resets: resets.items, init: init.items };
+}
+
+
+// Control-flow keywords are recognised by name while walking a Program; they are
+// not registered ops.
+export const CF_OPENERS = new Set(['IF', 'IFERR', 'WHILE', 'DO', 'START', 'FOR', 'CASE']);
+
+export const CF_CLOSERS = new Set(['END', 'NEXT', 'STEP']);
+
+export const CF_INNERS  = new Set(['THEN', 'ELSE', 'REPEAT', 'UNTIL']);
+
+
+export function bareNameId(tok) {
+  if (!isName(tok) || tok.quoted) return null;
+  return tok.id.toUpperCase();
+}
+
+
+// First index at nesting depth 0 holding the keyword `wanted` or a closer, as
+// { idx, kind }; null if none.  A CASE holds one END per clause plus its own, so
+// it is skipped whole.
+export function scanAtDepth0(toks, from, wanted) {
+  let depth = 0;
+  let i = from;
+  while (i < toks.length) {
+    const id = bareNameId(toks[i]);
+    if (!id) { i++; continue; }
+    if (id === 'CASE') {
+      i = _pastCaseEnd(toks, i + 1);
+      continue;
+    }
+    if (CF_OPENERS.has(id)) { depth++; i++; continue; }
+    if (CF_CLOSERS.has(id)) {
+      if (depth === 0) return { idx: i, kind: id };
+      depth--;
+      i++;
+      continue;
+    }
+    if (depth === 0 && id === wanted) {
+      return { idx: i, kind: id };
+    }
+    i++;
+  }
+  return null;
+}
+
+
+// Index just past the END closing a CASE whose remaining body starts at `from`.
+// Each depth-0 THEN opens a clause that owes its own END.
+export function _pastCaseEnd(toks, from) {
+  let pending = 1;
+  let nest = 0;
+  let i = from;
+  while (i < toks.length) {
+    const id = bareNameId(toks[i]);
+    if (id) {
+      if (id === 'CASE') {
+        i = _pastCaseEnd(toks, i + 1);
+        continue;
+      }
+      if (CF_OPENERS.has(id)) {
+        nest++;
+      } else if (CF_CLOSERS.has(id)) {
+        if (nest > 0) nest--;
+        else if (id === 'END') {
+          pending--;
+          if (pending === 0) return i + 1;
+        }
+      } else if (nest === 0 && id === 'THEN') {
+        pending++;
+      }
+    }
+    i++;
+  }
+  return toks.length;
+}
+
+
+// A block whose closer is missing auto-closes at the end of the program, like
+// the parser's unterminated « { [.  Returns the index just past the block.
+export function _pastBlock(toks, endIdx) {
+  return Math.min(endIdx + 1, toks.length);
+}
+
+
+export function _scanRequired(toks, from, keyword, message) {
+  const scan = scanAtDepth0(toks, from, keyword);
+  if (!scan || scan.kind !== keyword) throw new RPLError(message);
+  return scan.idx;
+}
+
+
+export function _scanEnd(toks, from, message) {
+  const scan = scanAtDepth0(toks, from, null);
+  if (!scan) return toks.length;
+  if (scan.kind !== 'END') throw new RPLError(message);
+  return scan.idx;
+}
+
+
+export function _scanElseEnd(toks, thenIdx, label) {
+  const branch = scanAtDepth0(toks, thenIdx + 1, 'ELSE');
+  if (!branch) return { elseIdx: -1, endIdx: toks.length };
+  if (branch.kind === 'END') return { elseIdx: -1, endIdx: branch.idx };
+  if (branch.kind !== 'ELSE') throw new RPLError(`${label}/THEN: unexpected ${branch.kind}`);
+  const end = scanAtDepth0(toks, branch.idx + 1, null);
+  return { elseIdx: branch.idx, endIdx: end && end.kind === 'END' ? end.idx : toks.length };
+}
+
+
+export function _scanCounterCloser(toks, from, label) {
+  const scan = scanAtDepth0(toks, from, null);
+  if (!scan) return { closer: 'NEXT', closerIdx: toks.length };
+  if (scan.kind === 'END') throw new RPLError(`${label} without NEXT/STEP`);
+  return { closer: scan.kind, closerIdx: scan.idx };
 }
