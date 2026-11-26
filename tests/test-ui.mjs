@@ -33,6 +33,8 @@ import { holdToClear, holdForLines } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
 import { SOFT_MENU_METHODS, sigmaDataNote, modulusNote } from '../www/src/ui/soft-menus.js';
 import { DIALOG_METHODS } from '../www/src/ui/dialogs.js';
+import { KEEP_METHODS, sourceHash } from '../www/src/ui/keep.js';
+import { saveDraft, loadDraft, saveToLocalStorage, NOT_STORED, RUN_KEY, UNDO_KEY } from '../www/src/rpl/persist.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 // A stand-in app with the soft-menu methods, which records the menu shown and what its keys do.
@@ -107,6 +109,63 @@ async function withHalted(halted, fn) {
 const ticks = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function fakeInput(value, n) {
   return { value, dataset: { inf: String(n) }, complaint: '', focused: false, setCustomValidity(m) { this.complaint = m; }, reportValidity() {}, focus() { this.focused = true; } };
+}
+
+// A page for the keep methods: the listeners added to it, which a test fires, its visibility, and storage in a map.
+function fakePage() {
+  const handlers = [];
+  const store = new Map();
+  const page = {
+    store,
+    visibility: 'visible',
+    fire(type) { for (const h of handlers.filter((x) => x.type === type)) h.fn({ type }); },
+    hide() { page.visibility = 'hidden'; page.fire('visibilitychange'); },
+    show() { page.visibility = 'visible'; page.fire('visibilitychange'); },
+    addEventListener: (type, fn) => handlers.push({ type, fn }),
+    localStorage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
+  };
+  page.document = { addEventListener: page.addEventListener, get visibilityState() { return page.visibility; }, get hidden() { return page.visibility === 'hidden'; } };
+  return page;
+}
+async function onPage(fn) {
+  const page = fakePage();
+  const was = { document: globalThis.document, localStorage: globalThis.localStorage, addEventListener: globalThis.addEventListener };
+  Object.assign(globalThis, { document: page.document, localStorage: page.localStorage, addEventListener: page.addEventListener });
+  try { return await fn(page); } finally { Object.assign(globalThis, was); }
+}
+// A stand-in app with the keep methods, which records what they ask of the rest of the app.
+function keepApp(extra = {}) {
+  const did = [];
+  const typing = [];
+  const app = {
+    ...KEEP_METHODS, did, prefs: {}, menuKind: 'MTH', menuFolder: null, menuPage: 0, menuAll: [], inputMode: 'rpl', pendingEdit: null,
+    setPrefs(prefs) { Object.assign(app.prefs, prefs); did.push(`prefs ${JSON.stringify(prefs)}`); },
+    menubar: { render: () => did.push('menu drawn') },
+    entry: { buffer: '', cursor: 0, resetBuffer(text) { this.buffer = text; }, subscribe: (fn) => typing.push(fn) },
+    type(text) { app.entry.buffer = text; typing.forEach((fn) => fn()); },
+    _draft: () => (app.entry.buffer.trim() ? { text: app.entry.buffer, cursor: app.entry.cursor } : null),
+    stack: new Stack(),
+    renderStatus: () => did.push('status'),
+    input: { render: () => did.push('input') },
+    setInputMode(mode) { app.inputMode = mode; },
+    _writer: () => ({ restore: (saved) => { if (saved.bad) throw new Error('unreadable'); did.push(`restored ${saved.grid}`); }, clear: () => did.push('cleared') }),
+    _running: () => false,
+    _noteAutosave: () => did.push('autosaved'),
+    toast: (text) => did.push(`toast ${text}`),
+    ...extra,
+  };
+  return app;
+}
+function restoredEdit(values, edit) {
+  const app = keepApp();
+  for (const value of values) app.stack.push(value);
+  app._restoreEdit(edit);
+  return app.pendingEdit;
+}
+function quietly(fn) {
+  const warn = console.warn;
+  console.warn = () => {};
+  try { return fn(); } finally { console.warn = warn; }
 }
 function openedMenu(id, extra) {
   const app = menuApp(extra);
@@ -4574,10 +4633,34 @@ const resetRun = await (async () => {
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   assert(/this\.renderAll\(\);\n\s*this\._restoreDraft\(\);\n\s*this\._installDraft\(\);\n\s*this\._openSharedLink\(\);/.test(appSrc),
     'a kept line is restored before a shared link or shortcut fills the line, and saving starts after the restore');
-  assert(/_restoreDraft\(\) \{\n\s*const draft = loadDraft\(\);\n\s*if \(!draft\) return;\n\s*this\.entry\.resetBuffer\(draft\.text\);\n\s*this\.entry\.cursor = draft\.cursor;\n\s*if \(draft\.edit\) this\._restoreEdit\(draft\.edit\);\n\s*if \(draft\.writer\) this\._restoreWriter\(draft\.writer\);\n\s*\}/.test(appSrc),
+  assert(await onPage(() => {
+    const none = keepApp();
+    none._restoreDraft();
+    saveDraft({ text: '1 2 +', cursor: 3, edit: { kind: 'level', level: 1, was: 5 }, writer: { mode: 'matrix', saved: { grid: [['1']] } } });
+    const app = keepApp({ _restoreEdit: (edit) => app.did.push(`edit ${edit.level}`), _restoreWriter: (writer) => app.did.push(`writer ${writer.mode}`) });
+    app._restoreDraft();
+    return none.entry.buffer === '' && !none.did.length && app.entry.buffer === '1 2 +' && app.entry.cursor === 3 && app.did.join() === 'edit 1,writer matrix';
+  }),
     'the restore sets the text and the cursor without recall, which would raise the phone keyboard');
-  assert(/this\.entry\.subscribe\(\(\) => \{\n\s*clearTimeout\(timer\);\n\s*if \(this\._draft\(\)\) timer = setTimeout\(keep, DRAFT_DELAY_MS\);\n\s*else keep\(\);\n\s*\}\);/.test(appSrc)
-    && /visibilityState === 'hidden'\) keep\(\)/.test(appSrc) && /addEventListener\('pagehide', keep\)/.test(appSrc),
+  assert(await onPage(async (page) => {
+    const app = keepApp();
+    app._installDraft();
+    app.type('12');
+    const soon = loadDraft();
+    await ticks(450);
+    const paused = loadDraft()?.text;
+    app.type('');
+    const emptied = loadDraft();
+    app.type('7');
+    page.hide();
+    const hidden = loadDraft()?.text;
+    app.entry.buffer = '8';
+    page.fire('pagehide');
+    const closed = loadDraft()?.text;
+    app.entry.buffer = '9';
+    app._keepDraft();
+    return soon === null && paused === '12' && emptied === null && hidden === '7' && closed === '8' && loadDraft()?.text === '9';
+  }),
     'a line is saved after a pause in typing, at once when it is emptied, and as the page is hidden or closed');
   assert(/_draft\(\) \{\n\s*if \(this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;/.test(appSrc),
     'a dialog\'s answer is not kept, nor a blank line with no writer and no edit');
@@ -4625,8 +4708,13 @@ const resetRun = await (async () => {
 // The formula or matrix being written comes back with the line.
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/if \(draft\.writer\) this\._restoreWriter\(draft\.writer\);/.test(appSrc)
-    && /_restoreWriter\(\{ mode, saved \}\) \{\n\s*try \{\n\s*this\.setInputMode\(mode\);\n\s*this\._writer\(\)\.restore\(saved\);\n\s*\} catch \(e\) \{[\s\S]*?this\.setInputMode\('rpl'\);/.test(appSrc),
+  assert(quietly(() => {
+    const back = keepApp();
+    back._restoreWriter({ mode: 'matrix', saved: { grid: [['2']] } });
+    const lost = keepApp();
+    lost._restoreWriter({ mode: 'matrix', saved: { bad: true } });
+    return back.inputMode === 'matrix' && back.did.join() === 'restored 2' && lost.inputMode === 'rpl' && lost.did.join() === 'cleared';
+  }),
     'the writer a draft held is opened and filled at the start, and one that cannot be put back is closed again so the start goes on');
   assert(/_draft\(\) \{\n\s*if \(this\._dialogHalt\) return null;\n\s*const text = this\.entry\.buffer;\n\s*const writer = this\._writerDraft\(\);\n\s*const edit = this\._editDraft\(\);\n\s*return text\.trim\(\) \|\| writer \|\| edit \? \{ text, cursor: this\.entry\.cursor, \.\.\.\(writer && \{ writer \}\), \.\.\.\(edit && \{ edit \}\) \} : null;/.test(appSrc)
     && /if \(mode === 'equation'\) saved\.state = \{ \.\.\.saved\.state, history: \[\], future: \[\] \};/.test(appSrc),
@@ -4686,9 +4774,14 @@ const resetRun = await (async () => {
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/_editDraft\(\) \{\n\s*const edit = this\.pendingEdit;\n\s*if \(!edit\) return null;\n\s*edit\.was \?\?= sourceHash\(edit\.value\);\n\s*const \{ kind, level, name, line, was \} = edit;\n\s*return \{ kind, \.\.\.\(kind === 'level' \? \{ level \} : \{ name \}\), \.\.\.\(line && \{ line \}\), was \};/.test(appSrc)
-    && /for \(const c of formatSource\(value\)\) hash = \(Math\.imul\(hash, 31\) \+ c\.codePointAt\(0\)\) \| 0;/.test(appSrc),
+    && sourceHash(Real(5)) === sourceHash(Real(5)) && sourceHash(Real(5)) !== sourceHash(Real(6)) && Number.isInteger(sourceHash(Str('x'))),
     'a draft names the edit by its level or variable and a hash of the value it began from');
-  assert(/_restoreEdit\(\{ kind, level, name, line, was \}\) \{\n\s*const value = kind === 'level' \? \(level <= this\.stack\.depth \? this\.stack\.peek\(level\) : undefined\) : varRecall\(name\);\n\s*if \(value === undefined \? was !== NOT_STORED : sourceHash\(value\) !== was\) return;/.test(appSrc),
+  assert((() => {
+    const level = restoredEdit([Real(5)], { kind: 'level', level: 1, was: sourceHash(Real(5)) });
+    const changed = restoredEdit([Real(6)], { kind: 'level', level: 1, was: sourceHash(Real(5)) });
+    const gone = restoredEdit([], { kind: 'level', level: 1, was: sourceHash(Real(5)) });
+    return level?.label === 'Editing level 1' && level.value.value.toString() === '5' && changed === null && gone === null;
+  })(),
     'the edit is taken up again only for the value it began from; a level or variable that changed leaves the text as a plain line');
   assert(/_endEdit\(\) \{\n\s*this\.pendingEdit = null;\n\s*this\.renderStatus\(\);\n\s*this\.input\.render\(\);\n\s*this\._keepDraft\?\.\(\);\n\s*\}/.test(appSrc),
     'an edit that ends is forgotten at once, since an edit with its line emptied is kept and would otherwise wait out the typing pause');
@@ -4697,10 +4790,24 @@ const resetRun = await (async () => {
 // The soft keys come back on the folder and page they were left on: kept as the page is hidden, found again by the folder's key.
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/_keepMenuPlace\(\) \{\n\s*if \(this\.menuKind && this\.menuKind !== 'TMENU'\) this\.setPrefs\(\{ menu: this\.menuKind, menuFolder: this\.menuFolder, menuPage: this\.menuPage \}\);\n\s*\}/.test(appSrc)
-    && /_installMenuPlace\(\) \{\n\s*document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) this\._keepMenuPlace\(\); \}\);\n\s*addEventListener\('pagehide', \(\) => this\._keepMenuPlace\(\)\);/.test(appSrc),
+  assert(await onPage((page) => {
+    const app = keepApp({ menuKind: 'TRIG', menuFolder: 'HYP', menuPage: 1 });
+    app._installMenuPlace();
+    page.hide();
+    const kept = app.did.join() === 'prefs {"menu":"TRIG","menuFolder":"HYP","menuPage":1}';
+    app.menuKind = 'TMENU';
+    page.fire('pagehide');
+    return kept && app.did.length === 1;
+  }),
     'menu place: the menu, folder and page are kept as the page is hidden, except a program\'s temporary menu');
-  assert(/_restoreMenuPlace\(\) \{\n\s*const \{ menuFolder, menuPage \} = this\.prefs;\n\s*if \(menuFolder && menuFolder !== this\.menuFolder\) \{\n\s*const folder = this\.menuAll\.find\(\(slot\) => slot\.dir && slot\.label === menuFolder\);\n\s*if \(!folder\) return;\n\s*folder\.onPress\(\);\n\s*\}\n\s*this\.menuPage = Math\.min\(menuPage, Math\.max\(0, Math\.ceil\(this\.menuAll\.length \/ 6\) - 1\)\);\n\s*this\.menubar\.render\(\);/.test(appSrc),
+  assert((() => {
+    const slots = Array.from({ length: 14 }, (_, i) => ({ label: `K${i}` }));
+    const app = keepApp({ prefs: { menuFolder: 'B', menuPage: 9 }, menuAll: [{ label: 'B', dir: true, onPress: () => app.did.push('open B') }, ...slots] });
+    app._restoreMenuPlace();
+    const missing = keepApp({ prefs: { menuFolder: 'Z', menuPage: 1 }, menuAll: slots });
+    missing._restoreMenuPlace();
+    return app.did.join() === 'open B,menu drawn' && app.menuPage === 2 && !missing.did.length && missing.menuPage === 0;
+  })(),
     'menu place: the folder is opened by its own key, and a saved page past the last one shows the last');
   assert(/this\.showMenu\(this\.prefs\.menu \?\? \(varOrder\(\)\.length \? 'VARS' : 'STACK'\), \{ remember: false \}\);\n\s*this\._restoreMenuPlace\(\);\n\s*this\._installMenuPlace\(\);/.test(appSrc),
     'menu place: the place is restored right after the first menu is shown, and kept from then on');
@@ -4724,7 +4831,15 @@ const resetRun = await (async () => {
     && /_commitEdit\(\) \{\n\s*const edit = this\.pendingEdit;\n\s*if \(!edit\.ran && !this\.entry\.buffer\.trim\(\)\) \{ this\.cancelEdit\(\); return; \}\n\s*const before = this\.stack\.depth;/.test(appSrc)
     && /if \(this\.pendingEdit && key\.primary === 'ENTER'\) return !this\.pendingEdit\.ran \? 'CANCEL' : this\.pendingEdit\.kind === 'var' \? 'STORE' : 'REPLACE';\n\s*if \(key\.primary === 'ENTER' && depth\) return 'DUP';/.test(appSrc),
     'edit: Enter on an emptied edit line cancels the edit unless a key has changed the stack since, and the Enter key is captioned to match');
-  assert(/\{ name, label: `\$\{was === NOT_STORED \? 'Entering' : 'Editing'\} \$\{name\}`, path: currentPath\(\)\.join\('\/'\) \}/.test(appSrc)
+  assert((() => {
+    varStore('KEEPV', Real(3));
+    const stored = restoredEdit([], { kind: 'var', name: 'KEEPV', was: sourceHash(Real(3)) });
+    const changed = restoredEdit([], { kind: 'var', name: 'KEEPV', was: sourceHash(Real(4)) });
+    varPurge('KEEPV');
+    const fresh = restoredEdit([], { kind: 'var', name: 'KEEPV', was: NOT_STORED });
+    const path = currentPath().join('/');
+    return stored?.label === 'Editing KEEPV' && stored.path === path && changed === null && fresh?.label === 'Entering KEEPV' && fresh.path === path;
+  })()
     && /if \(this\._editedAway\(edit\)\) this\.toast\(this\._editedAwayNote\(edit\)\);\n\s*else \{\n\s*varStore\(edit\.name, this\.stack\.pop\(\)\);\n\s*this\.undoToast\(`Stored \$\{edit\.name\}`\);\n\s*\}/.test(appSrc)
     && /const away = edit\?\.kind === 'var' && this\._editedAway\(edit\);/.test(appSrc)
     && /else if \(edit\?\.kind === 'var' && !away\) varStore\(edit\.name, value\);/.test(appSrc)
@@ -4739,7 +4854,20 @@ const resetRun = await (async () => {
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   assert(/loadInitialState\(this\.stack\);\n\s*loadUndo\(this\.stack\);\n\s*this\.entry\.setHistory\(loadHistory\(\)\);/.test(appSrc)
     && /this\._keepStorage\(\);\n\s*this\._installUndoKeep\(\);/.test(appSrc)
-    && /_installUndoKeep\(\) \{\n\s*const keep = \(\) => saveUndo\(this\.stack\);\n\s*document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) keep\(\); \}\);\n\s*addEventListener\('pagehide', keep\);\n\s*\}/.test(appSrc)
+    && await onPage((page) => {
+      const app = keepApp();
+      app.stack.push(Real(1));
+      app.stack.saveForUndo();
+      app.stack.push(Real(2));
+      saveToLocalStorage(app.stack);
+      app._installUndoKeep();
+      const before = page.store.has(UNDO_KEY);
+      page.hide();
+      const hidden = page.store.has(UNDO_KEY);
+      page.store.delete(UNDO_KEY);
+      page.fire('pagehide');
+      return !before && hidden && page.store.has(UNDO_KEY);
+    })
     && /if \(this\._offScreen\) return;\n\s*this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);\n\s*saveUndo\(this\.stack\);/.test(appSrc),
     'undo kept: the steps load right after the state, are written as the page is hidden and at OFF');
   assert(resetRun.removed.has(resetRun.keys.UNDO_KEY), 'undo kept: Reset everything removes the file');
@@ -4754,8 +4882,26 @@ const resetRun = await (async () => {
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   assert(/this\._installUndoKeep\(\);\n\s*this\._installRunKeep\(\);/.test(appSrc)
     && /this\._openShortcut\(\);\n\s*this\._noteInterruptedRun\(\);/.test(appSrc)
-    && /_installRunKeep\(\) \{\n\s*holdPageLock\(\);\n\s*let kept = false;\n\s*const keep = \(\) => \{\n\s*const record = calcState\.halted;\n\s*if \(!record\) return;\n\s*const first = calcState\.haltedStack\[0\] \?\? record;\n\s*const again = record\.kind === 'slice' \? !this\._savedMidRun : first\.step === this\.stack\.undoMark\(\);\n\s*saveRun\(\{ kind: record\.kind, tag: first\.tag \?\? null, line: first\.line, again: !!first\.line && again \}\);\n\s*kept = true;\n\s*\};\n\s*const back = \(\) => \{\n\s*if \(kept\) saveRun\(null\);\n\s*kept = false;\n\s*\};/.test(appSrc)
-    && /document\.addEventListener\('visibilitychange', \(\) => \{ if \(document\.visibilityState === 'hidden'\) keep\(\); else back\(\); \}\);\n\s*addEventListener\('pagehide', keep\);\n\s*addEventListener\('pageshow', back\);\n\s*subscribeState\(\(\) => \{ if \(document\.hidden\) \(calcState\.halted \? keep : back\)\(\); \}\);/.test(appSrc),
+    && await onPage((page) => {
+      const depth = calcState.haltedStack.length;
+      const st = new Stack();
+      st.push(parseEntry('« 1 HALT 2 »')[0]);
+      lookup('EVAL').fn(st);
+      const app = keepApp();
+      const stop = app._installRunKeep();
+      page.hide();
+      const noted = JSON.parse(page.store.get(RUN_KEY) ?? 'null')?.kind === 'halt';
+      page.show();
+      const forgotten = !page.store.has(RUN_KEY);
+      page.fire('pagehide');
+      const closed = page.store.has(RUN_KEY);
+      page.fire('pageshow');
+      const shown = !page.store.has(RUN_KEY);
+      page.hide();
+      while (calcState.haltedStack.length > depth) clearHalted();
+      stop();
+      return noted && forgotten && closed && shown && !page.store.has(RUN_KEY);
+    }),
     'run note: the program left suspended is written as the page is hidden, and forgotten when the page is back or the program ended');
   assert(/async _noteInterruptedRun\(\) \{\n\s*const run = await takeRun\(\);\n\s*if \(!run\) return;\n\s*const text = interruptedRunNote\(run\);\n\s*const opts = \{ essential: true, transient: true, timeout: Infinity \};\n\s*const rerun = \(\) => \{\n\s*const typed = this\.entry\.buffer;\n\s*this\.runLine\(run\.line\);\n\s*if \(typed\.trim\(\)\) this\.entry\.recall\(typed\);\n\s*\};\n\s*if \(run\.kind === 'slice'\) \{\n\s*this\.toast\(text, \{ key: 'run', \.\.\.\(run\.again && \{ action: 'Run again', onAction: rerun \}\), \.\.\.opts \}\);\n\s*\} else if \(this\.stack\.hasUndo\(\)\) \{\n\s*const mark = this\.stack\.undoMark\(\);\n\s*this\.undoToast\(text, run\.again \? \{ action: 'Run again', onAction: \(\) => this\._undoIfLatest\(mark, rerun\) \} : null, opts\);\n\s*\} else \{\n\s*this\.toast\(text, \{ key: 'run', \.\.\.opts \}\);\n\s*\}/.test(appSrc)
     && /undoToast\(message, also = null, opts = \{\}\) \{\n\s*const mark = this\.stack\.undoMark\(\);\n\s*this\.toast\(message, \{ key: 'undo', action: 'Undo', also, \.\.\.opts, onAction:/.test(appSrc),
@@ -5102,7 +5248,23 @@ const resetRun = await (async () => {
     && keySrc.includes("if (key.primary === 'ON') el.dataset.on = '';")
     && /:root\[data-running\] :is\(#appbar, #rail, #drawer, #input, #menubar, #keys\) button:not\(\[data-on\]\) \{ opacity: \.45;/.test(cssSrc),
     'running: a touch lands on the banner and the ON key and on nothing else, and every other key shows dimmed');
-  assert(/if \(this\._running\(\)\) return;\n\s*if \(calcState\.halted\) this\._savedMidRun = true;\n\s*this\._noteAutosave\(saveToLocalStorage\(this\.stack\)\);/.test(appSrc)
+  assert(await onPage(async () => {
+    const running = keepApp({ _running: () => true });
+    running._installAutosave();
+    running.stack.push(Real(1));
+    const idle = keepApp();
+    idle._installAutosave();
+    idle.stack.push(Real(1));
+    idle.stack.push(Real(2));
+    await null;
+    const was = calcState.halted;
+    calcState.halted = { kind: 'halt' };
+    idle.stack.push(Real(3));
+    await null;
+    calcState.halted = was;
+    idle._running = () => true;
+    return !running.did.length && idle.did.join() === 'autosaved,autosaved' && idle._savedMidRun === true;
+  })
     && /run: \(text\) => withoutRunSlices\(\(\) => \{/.test(appSrc),
     'running: half a run is never autosaved, and the assistant\'s run tool still runs a line through');
   assert(/stopProgram\(\) \{\n\s*if \(!this\._running\(\) && !calcState\.halted\?\.paused\) return false;\n\s*do clearHalted\(\); while \(this\._running\(\)\);\n\s*this\._endRun\(\);\n\s*this\.undoToast\('Program stopped'\);/.test(appSrc),
@@ -5146,7 +5308,7 @@ const resetRun = await (async () => {
   assert((() => { const app = openedFolder('STAT', 'DATA'); app.menu.slots[1].onPress(); return app.menu.slots[1].label === 'EDIT' && app.did.includes('edit ΣDAT') && openedFolder('STAT', '1VAR').menu.slots[1].label !== 'EDIT'; })()
     && /editStatData\(\) \{\n\s*if \(varRecall\('ΣDAT'\) !== undefined\) this\.editVariable\('ΣDAT'\);\n\s*else this\._beginEdit\(\{ kind: 'var', name: 'ΣDAT', fresh: true, was: NOT_STORED, label: 'Entering ΣDAT' \}\);/.test(appSrc)
     && appSrc.includes("const mode = edit.line ? 'rpl' : edit.fresh ? 'matrix'") && appSrc.includes('return value === undefined && !edit.fresh ? null : { ...edit, value, path: currentPath().join(\'/\') };')
-    && appSrc.includes('if (value === undefined ? was !== NOT_STORED : sourceHash(value) !== was) return;') && appSrc.includes("edit.name === 'ΣDAT' ? `Stored ${sigmaDataNote(value)}` : `Stored ${edit.name}`"),
+    && restoredEdit([], { kind: 'var', name: 'ΣDAT', was: NOT_STORED })?.label === 'Entering ΣDAT' && appSrc.includes("edit.name === 'ΣDAT' ? `Stored ${sigmaDataNote(value)}` : `Stored ${edit.name}`"),
     'statistics data: the DATA folder has an EDIT key that opens ΣDAT in the matrix writer, an empty one that stores as ΣDAT when none is stored yet, which a reload brings back, and the note says how many points it holds');
 }
 
