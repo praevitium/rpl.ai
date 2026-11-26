@@ -32,6 +32,7 @@ import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { holdToClear, holdForLines } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
 import { SOFT_MENU_METHODS, sigmaDataNote, modulusNote } from '../www/src/ui/soft-menus.js';
+import { DIALOG_METHODS } from '../www/src/ui/dialogs.js';
 import { assert, assertThrows } from './helpers.mjs';
 
 // A stand-in app with the soft-menu methods, which records the menu shown and what its keys do.
@@ -58,6 +59,55 @@ function menuApp(extra = {}) {
   return app;
 }
 const menuLabels = (app) => app.menu.slots.map((slot) => slot.label).join(' ');
+
+// A stand-in app with the dialog methods; it records the answers it would hand the program instead of running on.
+function dialogApp(extra = {}) {
+  const did = [];
+  const popEl = {
+    rows: [],
+    querySelectorAll: () => popEl.rows,
+    querySelector: (sel) => (sel === '.opt.on' ? { scrollIntoView: ({ block }) => did.push(`reveal ${block}`) } : null),
+  };
+  const app = {
+    ...DIALOG_METHODS, did, inputMode: 'rpl', shift: null, prefs: {}, _dialogHalt: null,
+    entry: {
+      buffer: '', cursor: 0,
+      recall(text) { this.buffer = text; this.cursor = text.length; },
+      cancel() { this.buffer = ''; did.push('cancel'); },
+      flashError: (e) => did.push(`error ${e.message}`),
+      safeRun: (fn, tag, opts) => { did.push(`run ${tag}${opts?.keepPartial ? ' keep' : ''}`); fn(); },
+    },
+    stack: { holdEmit: () => did.push('held') },
+    setShift(shift) { app.shift = shift; },
+    releaseShift: () => did.push('release'),
+    setMinimalMenu: (on) => did.push(`menu ${on}`),
+    _closeWriter: (why) => did.push(`close ${why(app.inputMode)}`),
+    popover: { el: null, close: () => did.push('popover closed') },
+    sheets: { kind: null, openInform: (form) => { app.form = form; }, close: () => did.push('sheet closed') },
+    _heldKeyMenu(options, anchor, label, opts) {
+      app.list = { anchor, label, opts, options };
+      popEl.rows = options.map((o) => {
+        const row = { on: !!o.on, ck: { innerHTML: o.mark }, classList: { toggle: (_, on) => { row.on = on; } }, querySelector: () => row.ck };
+        return row;
+      });
+      app.popover.el = popEl;
+      return popEl;
+    },
+    _continueProgram: (...answers) => did.push(answers.map((a) => format(a)).join(' ') || 'go on'),
+    ...extra,
+  };
+  return app;
+}
+async function withHalted(halted, fn) {
+  const was = { halted: calcState.halted, document: globalThis.document };
+  calcState.halted = halted;
+  globalThis.document = { getElementById: (id) => ({ querySelector: (sel) => `#${id} ${sel}` }) };
+  try { return await fn(halted); } finally { calcState.halted = was.halted; globalThis.document = was.document; }
+}
+const ticks = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function fakeInput(value, n) {
+  return { value, dataset: { inf: String(n) }, complaint: '', focused: false, setCustomValidity(m) { this.complaint = m; }, reportValidity() {}, focus() { this.focused = true; } };
+}
 function openedMenu(id, extra) {
   const app = menuApp(extra);
   app._showFamilyMenu(id);
@@ -3000,19 +3050,51 @@ setAngle('RAD');
 {
   const bannerSrc = readFileSync(new URL('../www/src/ui/banner.js', import.meta.url), 'utf8');
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const inputDialog = await withHalted(parkedRecord('« "Q" { "abc" 2 } INPUT »'), async (halted) => {
+    const app = dialogApp({ inputMode: 'equation' });
+    app._beginDialog(halted);
+    const waited = app.entry.buffer === '';
+    await null;
+    const offered = app.entry.buffer === 'abc' && app.entry.cursor === 1 && app.did.join() === "close Put the equation aside for the program's INPUT";
+    app.entry.buffer = 'x y';
+    app._acceptInput();
+    return waited && offered && app.did.slice(1).join() === 'cancel,"x y"';
+  });
+  const verified = await withHalted(parkedRecord('« "Q" { "ab" V } INPUT »'), () => {
+    const app = dialogApp();
+    app.entry.buffer = '1 }';
+    app._acceptInput();
+    const refused = app.did.length === 1 && app.did[0].startsWith('error ');
+    app.entry.buffer = '1 2';
+    app._acceptInput();
+    return refused && app.did.slice(1).join() === 'cancel,"1 2"';
+  });
+  const resumedWith = (halted) => withHalted(halted, () => { const app = dialogApp(); DIALOG_METHODS._continueProgram.call(app, Integer(1n)); return app.did.join(); });
+  const resumed = await resumedWith({ kind: 'input', stepping: 'over' }) === 'run SST keep,held' && await resumedWith({ kind: 'msgbox', stepping: 'into' }) === 'run SST↓ keep,held'
+    && await resumedWith({ kind: 'msgbox' }) === 'run CONT keep,held' && await resumedWith({ kind: 'slice', tag: 'PROG' }) === 'run PROG keep,held';
   assert(/if \(kind === 'input'\) return `<div class="bn halt input" role="status">[\s\S]*?\$\{message\}<div class="bn-f">\$\{key\('ok', 'OK', 'Enter: answer with the command line', 'check', 'pri'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
     && /if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
-    && /_beginDialog\(halted\) \{\s*this\._dialogHalt = halted;\s*if \(halted\.kind === 'wait'\) \{ this\._beginWait\(halted\); return; \}\s*queueMicrotask\(\(\) => \{\s*if \(calcState\.halted !== halted\) return;\s*if \(halted\.kind === 'input'\) \{\s*if \(this\.inputMode !== 'rpl'\) this\._closeWriter\(\(mode\) => `Put the \$\{mode\} aside for the program's INPUT`\);\s*this\.entry\.recall\(halted\.dialog\.text\);\s*if \(halted\.dialog\.cursor != null\) this\.entry\.cursor = halted\.dialog\.cursor;\s*if \(halted\.dialog\.alpha && this\.shift !== 'alphaLock'\) \{ this\._dialogAlpha = true; this\.setShift\('alphaLock'\); \}\s*\} else if \(halted\.kind === 'inform'\) this\.showInformSheet\(\);\s*else this\.showChooseList\(\);/.test(appSrc)
-    && /_acceptInput\(\) \{[\s\S]{0,200}?if \(dialog\.verify\) \{ try \{ parseTyped\(text\); \} catch \(e\) \{ this\.entry\.flashError\(e\); return; \} \}\s*this\.entry\.cancel\(\);\s*this\._continueProgram\(Str\(text\)\);/.test(appSrc)
-    && /_continueProgram\(\.\.\.answers\) \{\s*const \{ kind, stepping, tag \} = calcState\.halted;\s*const op = \{ over: 'SST', into: 'SST↓' \}\[stepping\] \?\? 'CONT';\s*if \(kind !== 'wait' && kind !== 'slice'\) touchLcd\(\);\s*const resume = \(\) => \{ for \(const a of answers\) this\.stack\.push\(a\); lookup\(op\)\.fn\(this\.stack, this\.entry\); \};\s*this\.entry\.safeRun\(\(\) => this\.stack\.holdEmit\(\(\) => batchStateNotifications\(resume\)\), kind === 'slice' \? tag \?\? '' : op, \{ keepPartial: true \}\);/.test(appSrc)
+    && inputDialog && verified && resumed
     && /const stepping = _singleStepMode \? \(_stepInto \? 'into' : 'over'\) : null;\s*_pendingSuspend = \{ tokens, index, kind, dialog, stepping, prompt \};/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8'))
     && /if \(act === 'ok' && kind === 'input'\) \{ this\._acceptInput\(\); return; \}\s*if \(act === 'cont' && kind === 'msgbox'\) \{ this\._continueProgram\(\); return; \}[\s\S]{0,700}?if \(act === 'kill' && kind === 'input'\) this\.entry\.cancel\(\);/.test(appSrc),
     "INPUT: its banner is the prompt with OK and Stop keys and no program source; the text it offers goes on the command line once the line that ran the program has cleared; Enter or OK hands the line back as a string (with V only once it parses) and goes on without an undo step of its own, as MSGBOX's OK does, so UNDO after the program takes the whole run back rather than stopping between its answers, and a dialog reached while stepping steps on with SST or SST↓ rather than running the program out; Stop clears the line before KILL");
   assert(parks('« "Name?" "abc" INPUT »', 'input', true),
     'INPUT halts a running program the way PROMPT does, carrying the text to offer');
-  assert(/this\.entry\.recall\(halted\.dialog\.text\);\s*if \(halted\.dialog\.cursor != null\) this\.entry\.cursor = halted\.dialog\.cursor;/.test(appSrc),
+  assert(inputDialog,
     "INPUT: the HP's cursor position (n from the left, or { row col }, 0 the end of the row) places the cursor in the offered text");
-  assert(/_endDialog\(\) \{\s*if \(this\._dialogAlpha\) \{ this\._dialogAlpha = false; if \(this\.shift === 'alphaLock'\) this\.setShift\(null\); \}/.test(appSrc)
+  const alphaDialog = await withHalted(parkedRecord('« "Q" { "ab" α } INPUT »'), async (halted) => {
+    const app = dialogApp();
+    app._beginDialog(halted);
+    await null;
+    const locked = app.shift === 'alphaLock';
+    app._endDialog();
+    const kept = dialogApp({ shift: 'alphaLock' });
+    kept._beginDialog(halted);
+    await null;
+    kept._endDialog();
+    return locked && app.shift === null && kept.shift === 'alphaLock';
+  });
+  assert(alphaDialog
     && parkedDialog('« "Q" { "ab" V α } INPUT »')?.alpha === true && parkedDialog('« "Q" { "ab" V α } INPUT »')?.verify === true
     && parkedDialog('« "Q" "ab" INPUT »')?.alpha === false,
     "INPUT's α locks alpha on the keypad while the program waits, and the lock goes when the dialog ends unless it was on already");
@@ -3024,39 +3106,84 @@ setAngle('RAD');
   const { chooseEntry } = await import('../www/src/ui/menus.js');
   const { RList: L, Str: S, Integer: I, Name: N } = await import('../www/src/rpl/types.js');
   const pair = chooseEntry(L([S('Large'), I(2n)])), plain = chooseEntry(N('X')), triple = chooseEntry(L([I(1n), I(2n), I(3n)]));
+  const chooseList = await withHalted(parkedRecord('« "Q" { 1 2 { "Big" 3 } } 2 CHOOSE »'), async (halted) => {
+    const app = dialogApp();
+    app._beginDialog(halted);
+    await null;
+    const { anchor, label, opts, options } = app.list;
+    const shown = anchor === '#banner .bn' && label === 'Choose' && opts.above && opts.className === 'choose' && !!opts.onArrow
+      && options.map((o) => o.text).join() === '1,2,Big' && options.map((o) => !!o.on).join() === 'false,true,false' && options[1].mark && !options[0].mark;
+    options[2].run();
+    app._endDialog();
+    return shown && app.did.join() === 'reveal center,3 1,popover closed';
+  }) && await withHalted(parkedRecord('« "Q" { 1 2 } 0 CHOOSE »'), (halted) => {
+    const app = dialogApp();
+    app.showChooseList();
+    app.list.options[0].run();
+    return app.list.label === 'View' && app.list.opts.onArrow === null && app.did.join() === 'reveal center,0';
+  });
   assert(pair.label === 'Large' && pair.value.value === 2n && plain.label === 'X' && plain.value.id === 'X' && triple.label === '{ 1 2 3 }' && triple.value.items.length === 3,
     'CHOOSE: a { display result } pair shows the first and returns the second, while any other object, a longer list included, shows as itself and is the result');
   assert(/if \(kind === 'choose'\) return `<div class="bn halt choose" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt \|\| \(dialog\?\.pos \? 'Choose' : 'View'\)\)\}<\/div><div class="bn-f">\$\{dialog\?\.pos \? key\('choose', 'Choose', [^)]*'menu', 'pri'\) : key\('choose', 'View', [^)]*'menu', 'pri'\)\}\$\{key\('cancel', 'Cancel', [^)]*'x'\)\}\$\{STOP_KEY\}<\/div><\/div>`;/.test(bannerSrc)
-    && /showChooseList\(\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;[\s\S]{0,400}?mark: i \+ 1 === pos \? icon\('check', 'sm'\) : '', on: i \+ 1 === pos, run: \(\) => this\._answerChoice\(i \+ 1\)[\s\S]{0,200}?this\._chooseList = this\._heldKeyMenu\(rows, \$\('banner'\)\.querySelector\('\.bn'\), pos \? 'Choose' : 'View', \{ above: true, onArrow: pos \? \(d\) => this\._moveChoice\(d\) : null, className: 'choose' \}\);\s*this\._revealChoice\(true\);/.test(appSrc)
+    && chooseList
     && /_heldKeyMenu\(options, anchor, label, \{ above = false, onArrow = null, className = '' \} = \{\}\) \{[\s\S]{0,400}?keepFocus: true,\s*above,\s*onArrow,\s*className,/.test(appSrc)
     && /if \(\(this\._above \|\| top \+ h > vh - margin\) && r\.top - h - 6 >= margin\) top = r\.top - h - 6;/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8'))
     && /if \(act === 'choose' && kind === 'choose'\) \{ this\.showChooseList\(\); return; \}\s*if \(act === 'form' && kind === 'inform'\) \{ this\.showInformSheet\(\); return; \}\s*if \(act === 'cancel' && \(kind === 'choose' \|\| kind === 'inform'\)\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}/.test(appSrc)
     && /if \(this\._dialogHalt && this\._dialogHalt !== halted\) this\._endDialog\(\);\s*if \(halted\?\.dialog && this\._dialogHalt !== halted\) this\._beginDialog\(halted\);/.test(appSrc)
-    && /_endDialog\(\) \{\s*if \(this\._dialogAlpha\) \{[^}]*\}\s*if \(this\._dialogHalt\.kind === 'choose'\) this\.popover\.close\(\{ restoreFocus: false \}\);\s*if \(this\._dialogHalt\.kind === 'inform' && this\.sheets\.kind === 'inform'\) this\.sheets\.close\(\);\s*clearTimeout\(this\._waitTimer\);\s*this\._dialogHalt = null;/.test(appSrc)
     && parks('« "Q" { 1 2 } 1 CHOOSE »', 'choose', true),
     "CHOOSE: its banner is the prompt with Choose, Cancel and Stop keys; the choices open in the held-key popover above the banner (below the chip it covered Stop and the command line), the highlighted one marked, a tap answering with the choice and 1 (0 when none is highlighted), Cancel with 0, and the list goes when its dialog ends (a press on the banner's keys leaves a popover anchored to the banner open); it halts a running program the way INPUT does, carrying its choices");
 }
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
+  const enterAnswers = await withHalted(parkedRecord('« "Q" { 1 2 { "Big" 3 } } 2 CHOOSE »'), () => {
+    const app = dialogApp();
+    const typed = dialogApp();
+    typed.entry.buffer = '5';
+    return app._enterAnswersDialog() && app.did.join() === '2 1' && !typed._enterAnswersDialog() && !typed.did.length;
+  }) && await withHalted(parkedRecord('« "hi" MSGBOX »'), () => { const app = dialogApp(); return app._enterAnswersDialog() && app.did.join() === 'go on'; })
+    && await withHalted(parkedRecord('« "Q" { 1 2 } 0 CHOOSE »'), () => { const app = dialogApp(); return app._enterAnswersDialog() && app.did.join() === '0'; })
+    && await withHalted(parkedRecord('« "Q" "a" INPUT »'), () => !dialogApp()._enterAnswersDialog());
+  const moved = await withHalted(parkedRecord('« "Q" { 1 2 3 } 1 CHOOSE »'), (halted) => {
+    const app = dialogApp();
+    const reopened = app._moveChoice(1) && halted.dialog.pos === 1 && app.did.join() === 'reveal center';
+    const rows = app.popover.el.rows;
+    const down = app._moveChoice(1) && halted.dialog.pos === 2 && rows.map((r) => r.on).join() === 'false,true,false' && rows[1].ck.innerHTML && !rows[0].ck.innerHTML;
+    const clamped = app._moveChoice(5) && halted.dialog.pos === 3 && app._moveChoice(-9) && halted.dialog.pos === 1;
+    return reopened && down && clamped && app.did.slice(1).every((d) => d === 'reveal nearest');
+  }) && await withHalted(parkedRecord('« "Q" { 1 2 } 0 CHOOSE »'), () => !dialogApp()._moveChoice(1));
+  const jumped = await withHalted(parkedRecord('« "Q" { "apple" "Bean" "avocado" "cherry" } 1 CHOOSE »'), (halted) => {
+    const app = dialogApp();
+    const shut = !app._jumpChoice('a');
+    app.showChooseList();
+    const a = app._jumpChoice('a') && halted.dialog.pos === 3;
+    const wrapped = app._jumpChoice('A') && halted.dialog.pos === 1;
+    const b = app._jumpChoice('b') && halted.dialog.pos === 2;
+    const none = app._jumpChoice('z') && halted.dialog.pos === 2;
+    const digit = !app._jumpChoice('1');
+    app.entry.buffer = 'x';
+    return shut && a && wrapped && b && none && digit && !app._jumpChoice('c');
+  }) && await withHalted(parkedRecord('« "Q" { "apple" "avocado" "apricot" } 1 CHOOSE »'), (halted) => {
+    const app = dialogApp();
+    app.showChooseList();
+    return app._jumpChoice('a') && halted.dialog.pos === 2;
+  });
   assert(/if \(this\._enterAnswersDialog\(\)\) return;\s*if \(calcState\.halted\?\.kind === 'input'\) \{ this\._acceptInput\(\); return; \}/.test(appSrc)
     && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\) \|\| this\._enterAnswersDialog\(\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},/.test(appSrc)
-    && /_enterAnswersDialog\(\) \{\s*const kind = calcState\.halted\?\.kind;\s*if \(this\.entry\.buffer\.trim\(\) \|\| !\(kind === 'choose' \|\| kind === 'msgbox'\)\) return false;\s*if \(kind === 'msgbox'\) this\._continueProgram\(\);\s*else this\._answerChoice\(calcState\.halted\.dialog\.pos\);\s*return true;/.test(appSrc)
-    && /_answerChoice\(n\) \{\s*const \{ items, pos \} = calcState\.halted\.dialog;\s*if \(!pos\) \{ this\._continueProgram\(Integer\(0n\)\); return; \}\s*this\._continueProgram\(chooseEntry\(items\[n - 1\]\)\.value, Integer\(1n\)\);/.test(appSrc),
+    && enterAnswers,
     "Enter on an empty line is the OK of a CHOOSE (its highlighted choice, 0 when none is) and of a MSGBOX, as the HP's ENTER is; a typed line still runs");
-  assert(/_moveChoice\(d\) \{\s*const dialog = calcState\.halted\?\.kind === 'choose' \? calcState\.halted\.dialog : null;\s*if \(!dialog\?\.pos\) return false;\s*if \(!this\.popover\.el \|\| this\.popover\.el !== this\._chooseList\) \{ this\.showChooseList\(\); return true; \}\s*this\._markChoice\(Math\.max\(1, Math\.min\(dialog\.items\.length, dialog\.pos \+ d\)\)\);\s*return true;/.test(appSrc)
-    && /_revealChoice\(center\) \{\s*this\.popover\.el\?\.querySelector\('\.opt\.on'\)\?\.scrollIntoView\(\{ block: center \? 'center' : 'nearest' \}\);/.test(appSrc)
+  assert(moved
     && /const step = \{ '▲': -1, '▼': 1 \}\[key\.primary\];\s*if \(step && !this\.shift && \(this\._moveChoice\(step\) \|\| this\.autocomplete\.move\(step\)\)\) return;/.test(appSrc)
     && /onArrowUpEmpty: \(\) => this\._moveChoice\(-1\) \|\| this\._runChord\('ArrowUp'\),[\s\S]{0,200}?onArrowDownEmpty: \(\) => this\._moveChoice\(1\) \|\| this\._runChord\('ArrowDown'\),/.test(appSrc)
     && /if \(this\._onArrow && !ends && !letter\) \{ e\.preventDefault\(\); this\._onArrow\(e\.key === 'ArrowDown' \? 1 : -1\); return; \}/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     'CHOOSE: the list opens with the marked row in view, the arrow keys (keypad and keyboard) move the mark within the list or bring back a list put away, and Enter answers with it');
   assert(/this\._onResize = \(\) => requestAnimationFrame\(\(\) => \{[^}]*this\._place\(this\._point\);/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     "Popovers: a resize places an open popover a frame later, once the app's height has followed the visual viewport (after a turn the CHOOSE list sat over its banner's keys)");
-  assert(/_markChoice\(pos\) \{\s*calcState\.halted\.dialog\.pos = pos;\s*this\.popover\.el\.querySelectorAll\('\.opt'\)\.forEach\(\(row, i\) => \{\s*row\.classList\.toggle\('on', i \+ 1 === pos\);\s*row\.querySelector\('\.ck'\)\.innerHTML = i \+ 1 === pos \? icon\('check', 'sm'\) : '';\s*\}\);\s*this\._revealChoice\(false\);/.test(appSrc)
+  assert(moved
     && /class="opt\$\{o\.on \? ' on' : ''\}" data-v="\$\{i\}"/.test(appSrc)
     && /this\._place\(this\._point\);\s*this\.el\.querySelector\('\.opt\.on'\)\?\.scrollIntoView\(\{ block: 'nearest' \}\);/.test(readFileSync(new URL('../www/src/ui/popover.js', import.meta.url), 'utf8')),
     'CHOOSE: the highlighted choice, as the AUR has it, carries the highlight bar as well as the check mark, and stays in view when the popover is placed again after a turn');
-  assert(/_jumpChoice\(letter\) \{\s*const dialog = calcState\.halted\?\.kind === 'choose' \? calcState\.halted\.dialog : null;\s*if \(!dialog\?\.pos \|\| this\.popover\.el !== this\._chooseList \|\| this\.entry\.buffer\.trim\(\) \|\| !\/\^\\p\{L\}\$\/u\.test\(letter\)\) return false;[\s\S]{0,300}?const next = Array\.from\(\{ length: n \}, \(_, k\) => \(dialog\.pos \+ k\) % n\)\.find\(starts\);\s*if \(next !== undefined\) this\._markChoice\(next \+ 1\);\s*return true;/.test(appSrc)
+  assert(jumped
     && /if \(layer === 'A' && key\.alpha\) \{\s*if \(!this\._jumpChoice\(key\.alpha\)\) this\.entry\.type\(key\.alpha\);/.test(appSrc),
     'CHOOSE: a letter typed on an empty line with the list open, on a keyboard or on the keypad under alpha, moves the highlight to the next choice starting with it, wrapping; with the list put away or a line typed it types as usual');
   assert(/\.pop\.choose \.opt b \{ white-space: normal; overflow-wrap: anywhere; \}/.test(readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8')),
@@ -3126,7 +3253,7 @@ setAngle('RAD');
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
   assert(/if \(banner === this\._haltBanner\) \{\s*el\.querySelector\(':scope > \.lcd'\)\?\.remove\(\);\s*el\.insertAdjacentHTML\('afterbegin', lcd\);\s*return;\s*\}\s*this\._haltBanner = banner;\s*el\.innerHTML = lcd \+ banner;/.test(appSrc)
-    && /this\.entry\.safeRun\(\(\) => this\.stack\.holdEmit\(\(\) => batchStateNotifications\(resume\)\), kind === 'slice' \? tag \?\? '' : op, \{ keepPartial: true \}\);/.test(appSrc),
+    && await withHalted({ kind: 'wait' }, () => { const app = dialogApp(); DIALOG_METHODS._continueProgram.call(app); return app.did.join(); }) === 'run CONT keep,held',
     'WAIT in a loop: the banner stays put while the program halts again under the same one, and only its display is redrawn, where « 1 30 START .1 WAIT NEXT » rebuilt the banner every 0.1 s and its fade-in held it between 0 and 83% opacity at 280 px');
   assert(/const animate = !this\.ghosts && !this\.marks && before\.size && !prefersReducedMotion\(\) && !\['wait', 'slice'\]\.includes\(calcState\.halted\?\.kind\);/.test(readFileSync(new URL('../www/src/ui/display.js', import.meta.url), 'utf8')),
     "WAIT in a loop: the stack's rows change in place while the program waits, where « 0 1 50 START 1 + .1 WAIT NEXT » replayed level 1's fade-in every 0.1 s, between 0 and 73% opacity");
@@ -3141,18 +3268,36 @@ setAngle('RAD');
     && hpKeyCode('SWAP') === 36.1 && hpKeyCode('DROP') === 45.1 && hpKeyCode('nope') === null && hpKeyCode('1', 'X') === 92.1
     && typedKeyCode('1') === 92.1 && typedKeyCode('+') === 95.1 && typedKeyCode('-') === 85.1 && typedKeyCode(' ') === 104.1 && typedKeyCode('a') === 31.4 && typedKeyCode('A') === 31.4 && typedKeyCode('z') === 65.4 && typedKeyCode('ab') === null && typedKeyCode('?') === null,
     "WAIT key codes: a key's HP 50g row and column with the plane after the point (1 unshifted, 2 left, 3 right, 4 alpha); VARS and NEXT are the HP's VAR and NXT, a key the HP lacks takes a code of its APPS row, the compact keypad's SWAP and DROP are the ▶ and ⌫ keys that do their work on an empty line, and a character typed on a keyboard is the keypad key that types it, a letter's under α");
+  const keyed = await withHalted(parkedRecord('« 0 WAIT »'), () => { const app = dialogApp(); return app._answerKey(105.1) && app.did.join() === 'release,105.1' && !app._answerKey(null); })
+    && await withHalted(parkedRecord('« 2 WAIT »'), () => !dialogApp()._answerKey(105.1))
+    && await withHalted(parkedRecord('« "hi" MSGBOX »'), () => !dialogApp()._answerKey(105.1));
+  const waits = await withHalted(parkedRecord('« -1 WAIT »'), (halted) => {
+    const app = dialogApp({ prefs: { minimal: true } });
+    app._beginDialog(halted);
+    const plain = dialogApp();
+    plain._beginDialog(halted);
+    return app.did.join() === 'menu true' && !plain.did.length;
+  }) && await withHalted({ kind: 'wait', dialog: { seconds: 0.01 } }, async (halted) => {
+    const app = dialogApp();
+    app._beginDialog(halted);
+    const ended = dialogApp();
+    ended._beginDialog(halted);
+    ended._endDialog();
+    await ticks(40);
+    return app.did.join() === 'go on' && !ended.did.length;
+  });
   assert(/if \(kind === 'wait'\) return waitBannerHtml\(dialog\);/.test(bannerSrc)
     && /function waitBannerHtml\(\{ seconds \}\) \{\s*if \(seconds\) \{[\s\S]*?Waiting \$\{s\} second\$\{s === 1 \? '' : 's'\}<\/div><div class="bn-f">\$\{STOP_KEY\}<\/div>/.test(bannerSrc)
     && /<div class="bn-t">Press a key<\/div><div class="bn-f">\$\{key\('enter', 'Enter', [^}]*?'enter', 'pri'\)\}\$\{STOP_KEY\}/.test(bannerSrc)
     && /if \(act === 'enter' && kind === 'wait'\) \{ this\._answerKey\(hpKeyCode\('ENTER'\)\); return; \}/.test(appSrc)
-    && /_answerKey\(code\) \{\s*const halted = calcState\.halted;\s*if \(halted\?\.kind !== 'wait' \|\| !halted\.dialog\.key \|\| code == null\) return false;[\s\S]*?this\._continueProgram\(Real\(code\)\);\s*return true;/.test(appSrc)
+    && keyed
     && /handleKey\(key, \{ standard = false \} = \{\}\) \{[\s\S]{0,700}?if \(this\._answerKey\(hpKeyCode\(key\.primary, this\.layer\(\)\)\)\) return;/.test(appSrc)
     && /pressSoftKey\(i, forcedLayer = null\) \{\s*if \(this\._answerKey\(hpKeyCode\(`F\$\{i \+ 1\}`, forcedLayer \?\? this\.layer\(\)\)\)\) return;/.test(appSrc)
     && /if \(this\._answerKey\(hpKeyCode\('ENTER'\)\)\) return;\s*this\.entry\.enter\(\);/.test(appSrc)
     && /onCommit: \(\) => \{ if \(this\._answerKey\(hpKeyCode\('ENTER'\)\) \|\| this\._enterAnswersDialog\(\)\) return; if \(!this\._runChord\('Enter'\)\) this\.commitEntry\(\); \},\s*onType: \(text\) => this\._answerKey\(typedKeyCode\(text\)\) \|\| this\._jumpChoice\(text\),/.test(appSrc)
     && /EditorView\.inputHandler\.of\(\(_view, _from, _to, text\) => onType\?\.\(text\) === true\),/.test(readFileSync(new URL('../www/src/ui/entry.js', import.meta.url), 'utf8'))
     && /if \(e\.key\.length === 1 && !e\.ctrlKey && !e\.metaKey && !e\.altKey && !inField && this\._answerKey\(typedKeyCode\(e\.key\)\)\) \{ e\.preventDefault\(\); return; \}\s*const binding = findBinding\(chord,/.test(appSrc)
-    && /_beginWait\(halted\) \{\s*const \{ seconds, menu, poll \} = halted\.dialog;\s*if \(menu && this\.prefs\.minimal\) this\.setMinimalMenu\(true\);\s*if \(seconds\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(\); \}, seconds \* 1000\);/.test(appSrc)
+    && waits
     && /halted: calcState\.haltedStack\.some\(\(h\) => !isSuspension\(h\)\),/.test(appSrc)
     && parks('« 1 WAIT »', 'wait', true),
     "WAIT: a timed wait shows how long with a Stop key and goes on by itself after its seconds (no key press for the display, whose message stays); a key wait says Press a key with Enter and Stop, and any keypad key, soft key (F1 to F6), character typed on a keyboard (a hardware keyboard's keydown ahead of its chords, a phone keyboard's text through the editor's input handler) or Enter, from the chip, the line's Enter or the keyboard (ahead of the empty line's Enter chord), answers with its HP code; -1 shows the soft keys in minimal view; the status line lights no HALT for a wait, nor, as on the HP, for MSGBOX, INPUT, CHOOSE or INFORM, but keeps it while a program halted by HALT or PROMPT waits underneath");
@@ -3160,9 +3305,17 @@ setAngle('RAD');
 
 {
   const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/if \(halted\.dialog\.poll\) this\._continueProgram\(Real\(Math\.trunc\(code\)\), Real\(1\)\);\s*else this\._continueProgram\(Real\(code\)\);/.test(appSrc)
-    && /if \(poll\) this\._waitTimer = setTimeout\(\(\) => \{ if \(calcState\.halted === halted\) this\._continueProgram\(Real\(0\)\); \}, KEY_PAUSE_MS\);/.test(appSrc)
-    && /const KEY_PAUSE_MS = 20;/.test(appSrc)
+  const polled = await withHalted({ kind: 'wait', dialog: { key: true, poll: true } }, async (halted) => {
+    const app = dialogApp();
+    app._answerKey(81.1);
+    const idle = dialogApp();
+    idle._beginDialog(halted);
+    await ticks(10);
+    const early = !idle.did.length;
+    await ticks(40);
+    return app.did.join() === 'release,81. 1.' && early && idle.did.join() === '0.';
+  });
+  assert(polled
     && /if \(MODIFIER_KINDS\.has\(key\.kind\) && !calcState\.halted\?\.dialog\?\.poll && /.test(appSrc),
     "KEY: a key pressed while a program polls answers with the key's row and column and 1 (ENTER 105, the left shift 81 rather than shifting), and a 20 ms pause without one answers 0");
   assert(/function _loopLimit\(message\) \{\s*let run = _resumedAt;\s*let count = 0;\s*return \(\) => \{\s*if \(run !== _resumedAt\) \{ run = _resumedAt; count = 0; \}\s*if \(\+\+count > MAX_LOOP_ITERATIONS\) throw new RPLError\(message\);/.test(readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8')),
@@ -3175,12 +3328,25 @@ setAngle('RAD');
   const sheetsSrc = readFileSync(new URL('../www/src/ui/sheets.js', import.meta.url), 'utf8');
   const internalSrc = readFileSync(new URL('../www/src/rpl/ops/internal.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  const informed = await withHalted(parkedRecord('« "T" { { "A" "help" 0 } "B" } 2 { 5 } { 7 } INFORM »'), () => {
+    const app = dialogApp();
+    app.showInformSheet();
+    const { title, columns, fields } = app.form;
+    const shown = title === 'T' && columns === 2 && fields.map((field) => `${field.label}:${field.text}:${field.reset}:${field.help}`).join() === 'A:7:5:help,B:::';
+    const inputs = [fakeInput('2 3', 0), fakeInput('', 1)];
+    app.sheets.el = { querySelectorAll: () => inputs };
+    app.acceptInform();
+    const refused = !app.did.length && inputs[0].complaint === 'One object per field' && inputs[0].focused;
+    inputs[0].value = '"x"';
+    app.acceptInform();
+    const wrongType = inputs[0].complaint === 'Not a type this field takes (0)';
+    inputs[0].value = '2.5';
+    app.acceptInform();
+    app.cancelInform();
+    return shown && refused && wrongType && inputs[0].complaint === '' && app.did.join() === '{ 2.5 NOVAL } 1,0';
+  });
   assert(/if \(kind === 'inform'\) return `<div class="bn halt inform" role="status">[\s\S]*?<div class="bn-t">\$\{escapeHtml\(prompt \|\| 'Form'\)\}<\/div><div class="bn-f">\$\{key\('form', 'Fill in', [^}]*?'edit', 'pri'\)\}\$\{key\('cancel', 'Cancel', [^}]*?'x'\)\}\$\{STOP_KEY\}/.test(bannerSrc)
-    && /showInformSheet\(\) \{\s*const \{ title, fields, columns, resets, init \} = calcState\.halted\.dialog;[\s\S]*?this\.sheets\.openInform\(\{ title, columns, fields: rows \}\);/.test(appSrc)
-    && /acceptInform\(\) \{[\s\S]*?const value = text \? informValue\(text, fields\[Number\(input\.dataset\.inf\)\]\) : Name\('NOVAL'\);\s*if \(typeof value === 'string'\) \{ input\.setCustomValidity\(value\); input\.reportValidity\(\); input\.focus\(\); return; \}[\s\S]*?this\._continueProgram\(RList\(values\), Integer\(1n\)\);/.test(appSrc)
-    && /cancelInform\(\) \{ this\._continueProgram\(Integer\(0n\)\); \}/.test(appSrc)
-    && /function informText\(v\) \{\s*return !v \|\| \(isName\(v\) && v\.id === 'NOVAL'\) \? '' : withFractionMark\(formatSource\(v\)\);/.test(appSrc)
-    && /function informValue\(text, field\) \{[\s\S]*?if \(objects\.length !== 1\) return 'One object per field';\s*if \(field\.types\.length && !field\.types\.includes\(_hp50TypeCode\(objects\[0\]\)\)\) return/.test(appSrc)
+    && informed
     && /openInform\(form\) \{\s*this\.form = form;\s*this\._open\('inform'\);/.test(sheetsSrc)
     && /<label class="inf-field"><span>\$\{escapeHtml\(f\.label\)\}<\/span><input type="text" data-inf="\$\{n\}" value="\$\{escapeHtml\(f\.text\)\}" placeholder="\$\{escapeHtml\(f\.help\)\}"/.test(sheetsSrc)
     && /\$\{act\('inform-ok', 'check', 'OK', ' pri'\)\}\$\{act\('inform-cancel', 'x', 'Cancel'\)\}\$\{act\('inform-reset', 'undo', 'Reset'\)\}/.test(sheetsSrc)
