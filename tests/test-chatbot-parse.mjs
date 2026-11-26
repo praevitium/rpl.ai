@@ -527,7 +527,7 @@ import { readFileSync } from 'node:fs';
 function withFakeDocument(fn) {
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   class Node {
-    constructor(tag) { this.tagName = tag; this.childNodes = []; this.style = {}; }
+    constructor(tag) { this.tagName = tag; this.childNodes = []; this.style = {}; this.classList = { calls: 0, toggle() { this.calls++; } }; }
     appendChild(c) { this.childNodes.push(c); c.parent = this; return c; }
     replaceWith(n) { this.parent.childNodes[this.parent.childNodes.indexOf(this)] = n; n.parent = this.parent; }
     closest(sel) { let n = this; while (n && !n.className?.split(' ').includes(sel.slice(1))) n = n.parent; return n ?? null; }
@@ -587,6 +587,24 @@ function rendered(text) { return withFakeDocument(() => renderMarkdown(text).htm
 {
   const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
+  let fontsLoaded;
+  const fontsMarked = await withFakeDocument(async () => {
+    document.fonts = { ready: new Promise((r) => { fontsLoaded = r; }) };
+    const frag = renderMarkdown('$$y^2$$');
+    const scroller = async () => {
+      for (let i = 0; i < 50; i++) {
+        const el = frag.childNodes[0];
+        if (el.className?.includes('cb-scroll')) return el;
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      return null;
+    };
+    const el = await scroller();
+    const before = el?.classList.calls;
+    fontsLoaded();
+    await new Promise((r) => setTimeout(r, 0));
+    return before === 2 && el.classList.calls === 4;
+  });
   const mathHtml = await withFakeDocument(async () => {
     const frag = renderMarkdown('$$x^2$$');
     for (let i = 0; i < 50 && !frag.html.includes('cb-scroll'); i++) await new Promise((r) => setTimeout(r, 20));
@@ -597,7 +615,7 @@ function rendered(text) { return withFakeDocument(() => renderMarkdown(text).htm
          'display math, tables and code blocks in a reply are sideways scrollers marked with the stack\'s edge classes');
   assert(/if \(e\.target\.classList\?\.contains\('cb-scroll'\)\) markScrollEdges\(e\.target\);/.test(src)
            && /new ResizeObserver\(\(\) => markEdgesIn\(this\._messagesEl\)\)/.test(src)
-           && /document\.fonts\?\.ready\.then\(\(\) => markScrollEdges\(scroller\)\)/.test(src),
+           && fontsMarked,
          'the edges are marked as a scroller scrolls, as the drawer resizes and once KaTeX\'s fonts have loaded');
   assert(['.cb-scroll.more-r {', '.cb-scroll.more-l {', '.cb-scroll.more-l.more-r {'].every((sel) => css.includes(sel)),
          'calc.css fades a reply\'s scroller with the mask the stack levels use');
