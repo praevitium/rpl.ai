@@ -1,7 +1,7 @@
 import {
   parseAllToolCalls, parseSuggestions, findMachineSectionStart, stripThinkBlocks,
   resolveToolAlias, activeContextTokens, effectiveBudget, TOOL_ALIASES, ChatBot,
-  parseFencedBlock, parseInlineSpans, classifyMarkdownLine, parseTableAt, listIndent, quoteLinesAt,
+  parseFencedBlock, renderMarkdown, parseInlineSpans, classifyMarkdownLine, parseTableAt, listIndent, quoteLinesAt,
   normalizeRpl, normalizeRemoteConfig, looksInfix, fitChat, readChat, CHAT_KEY,
 } from '../www/src/ai/chat-bot.js';
 import {
@@ -518,18 +518,51 @@ import { readFileSync } from 'node:fs';
   assert(inner('**see \\(x\\) and `c`**')
            === JSON.stringify([['text', 'see '], ['math', 'x'], ['text', ' and '], ['code', 'c']]),
          'parseInlineSpans leaves \\(…\\) math and code inside bold to the inner pass');
-  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
-  assert(/else appendSpans\(parent\.appendChild\(elem\(SPAN_TAGS\[type\]\)\), content\);/.test(src),
+  assert(rendered('**a `c` b** and *e*') === '<p><strong>a <code>c</code> b</strong> and <em>e</em></p>',
          'appendSpans renders bold and em content through appendSpans, so math inside them goes to KaTeX');
 }
+
+// A stand-in document for the reply renderer: elements that keep their children and the properties the renderer sets,
+// printed as HTML so the tests read what a reply renders to rather than the renderer's source.
+function withFakeDocument(fn) {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  class Node {
+    constructor(tag) { this.tagName = tag; this.childNodes = []; this.style = {}; }
+    appendChild(c) { this.childNodes.push(c); c.parent = this; return c; }
+    replaceWith(n) { this.parent.childNodes[this.parent.childNodes.indexOf(this)] = n; n.parent = this.parent; }
+    closest(sel) { let n = this; while (n && !n.className?.split(' ').includes(sel.slice(1))) n = n.parent; return n ?? null; }
+    get lastElementChild() { return [...this.childNodes].reverse().find((c) => c.tagName) ?? null; }
+    get html() {
+      const inner = this.innerHTML !== undefined ? '…' : this.textContent !== undefined ? esc(this.textContent) : this.childNodes.map((c) => (c.tagName ? c.html : c.tagName === null ? c.html : esc(c.data))).join('');
+      if (this.tagName === null) return inner;
+      const attrs = [['class', this.className], ['href', this.href], ['target', this.target], ['rel', this.rel], ['start', this.start], ['align', this.style.textAlign]]
+        .filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => ` ${k}="${v}"`).join('');
+      const tag = this.tagName.toLowerCase();
+      return `<${tag}${attrs}>${inner}</${tag}>`;
+    }
+  }
+  const saved = globalThis.document;
+  globalThis.document = {
+    compatMode: 'CSS1Compat',
+    createElement: (tag) => new Node(tag.toUpperCase()),
+    createTextNode: (data) => ({ data }),
+    createDocumentFragment: () => new Node(null),
+  };
+  const restore = () => { globalThis.document = saved; };
+  let result;
+  try { result = fn(); } catch (e) { restore(); throw e; }
+  if (result instanceof Promise) return result.finally(restore);
+  restore();
+  return result;
+}
+function rendered(text) { return withFakeDocument(() => renderMarkdown(text).html); }
 
 // Numbered steps split by display math or a paragraph go on from their own
 // number: "2. Divide by 2" after a $$…$$ block showed as "1.".
 {
   assert(classifyMarkdownLine('2. Divide by 2').number === 2,
          'classifyMarkdownLine keeps the number of a numbered item');
-  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
-  assert(/if \(c\.kind === 'ordered' && c\.number !== 1\) list\.start = c\.number;/.test(src),
+  assert(rendered('1. One\n\nNote\n\n2. Two') === '<ol><li>One</li></ol><p>Note</p><ol start="2"><li>Two</li></ol>',
          'a numbered list that starts after a break starts at its first item\'s number');
 }
 
@@ -554,8 +587,13 @@ import { readFileSync } from 'node:fs';
 {
   const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../www/css/calc.css', import.meta.url), 'utf8');
-  assert(/import \{ markScrollEdges \} from '\.\.\/ui\/display\.js';/.test(src)
-           && /'cb-math-display cb-scroll'/.test(src) && /'cb-table cb-scroll'/.test(src) && /elem\('pre', \{ className: 'cb-scroll' \}\)/.test(src),
+  const mathHtml = await withFakeDocument(async () => {
+    const frag = renderMarkdown('$$x^2$$');
+    for (let i = 0; i < 50 && !frag.html.includes('cb-scroll'); i++) await new Promise((r) => setTimeout(r, 20));
+    return frag.html;
+  });
+  assert(mathHtml === '<div class="cb-math-display cb-scroll">…</div>' && rendered('| a |\n|---|\n| 1 |').startsWith('<div class="cb-table cb-scroll"><table>')
+           && rendered('```\nx\n```').startsWith('<pre class="cb-scroll"><code>x</code></pre>'),
          'display math, tables and code blocks in a reply are sideways scrollers marked with the stack\'s edge classes');
   assert(/if \(e\.target\.classList\?\.contains\('cb-scroll'\)\) markScrollEdges\(e\.target\);/.test(src)
            && /new ResizeObserver\(\(\) => markEdgesIn\(this\._messagesEl\)\)/.test(src)
@@ -567,15 +605,13 @@ import { readFileSync } from 'node:fs';
 
 // A <br> in a table cell, which models write to break a cell's lines, showed as typed; it breaks the line.
 {
-  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
-  assert(/cell\.split\(\/<br\\s\*\\\/\?>\/i\)\.forEach\(\(line, k\) => \{\s*if \(k\) td\.appendChild\(elem\('br'\)\);\s*appendSpans\(td, line\);/.test(src),
+  assert(rendered('| a |\n|---|\n| x<br>y<BR/>z |').includes('<td>x<br></br>y<br></br>z</td>'),
          'a table cell breaks its line at <br>, <br/> or <BR>, where the tag showed as typed');
 }
 
 // Headings 4 to 6 deep render as the smallest heading, h6.
 {
-  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
-  assert(/elem\(`h\$\{Math\.min\(c\.level \+ 2, 6\)\}`\)/.test(src),
+  assert(rendered('#### Deep') === '<h6>Deep</h6>' && rendered('# Top') === '<h3>Top</h3>',
          'a #### heading renders as h6 rather than an h7 the browser does not know');
 }
 
@@ -584,10 +620,8 @@ import { readFileSync } from 'node:fs';
 {
   assert(listIndent('- a') === 0 && listIndent('   - b') === 3 && listIndent('\t1. c') === 4 && listIndent('    - d') === 4,
          'listIndent counts an item\'s leading spaces, a tab as four');
-  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
-  assert(/if \(top && indent > top\.indent\) \{\s*lists\.push\(\{ list: newList\(top\.list\.lastElementChild, tag, c\), indent \}\);/.test(src)
-           && /while \(lists\.length > 1 && lists\.at\(-1\)\.indent > indent\) lists\.pop\(\);/.test(src)
-           && /if \(c\.kind !== 'bullet' && c\.kind !== 'ordered' && c\.kind !== 'blank'\) lists = \[\];/.test(src),
+  assert(rendered('1. Step\n   - detail\n2. Next') === '<ol><li>Step<ul><li>detail</li></ul></li><li>Next</li></ol>'
+           && rendered('- a\nText\n- b') === '<ul><li>a</li></ul><p>Text</p><ul><li>b</li></ul>',
          'a reply nests an item indented past the open one inside its last item, closes deeper lists when the indent comes back, and ends every list at a paragraph, heading, quote, rule or table');
 }
 
@@ -612,8 +646,7 @@ import { readFileSync } from 'node:fs';
            && T('`https://a.b/c` and [x](https://a.b/d)').includes('"code"') && !T('`https://a.b/c` and [x](https://a.b/d)').includes('"url"')
            && T('**https://a.b/c**') === JSON.stringify([['bold', 'https://a.b/c']]),
          'parseInlineSpans links a bare http(s) address, leaving a sentence\'s closing punctuation and a closing bracket outside it and code and [text](url) as they were (it stayed plain text)');
-  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
-  assert(/elem\('a', \{ href, target: '_blank', rel: 'noopener noreferrer' \}\)/.test(src),
+  assert(rendered('[t](https://a.b/c)') === '<p><a href="https://a.b/c" target="_blank" rel="noopener noreferrer">t</a></p>',
          'a link opens in a new tab without giving it the page');
 }
 
@@ -640,10 +673,8 @@ import { readFileSync } from 'node:fs';
   assert(J('> Tip: `LINSOLVE` works') === JSON.stringify({ kind: 'quote', content: 'Tip: `LINSOLVE` works' })
            && J('>tight') === JSON.stringify({ kind: 'quote', content: 'tight' }),
          'classifyMarkdownLine reads a > line as a quote, with or without a space');
-  const src = readFileSync(new URL('../www/src/ai/chat-bot.js', import.meta.url), 'utf8');
-  assert(/frag\.appendChild\(elem\('hr'\)\)/.test(src)
-           && /const \{ inner, end \} = quoteLinesAt\(lines, i\);\s*i = end - 1;/.test(src)
-           && /appendInlineMarkdownLines\(frag\.appendChild\(elem\('blockquote'\)\), inner\.join\('\\n'\)\);/.test(src),
+  assert(rendered('a\n\n---\n\nb') === '<p>a</p><hr></hr><p>b</p>'
+           && rendered('> one\n> - item\n>\n> two\nafter') === '<blockquote><p>one</p><ul><li>item</li></ul><p>two after</p></blockquote>',
          'a rule renders as hr, and quote lines in a row share one blockquote that any other line ends, its lines rendered as blocks of their own (paragraphs at a bare >, lists, quotes in quotes) where they ran together as one line');
 }
 

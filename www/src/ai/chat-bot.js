@@ -159,7 +159,7 @@ export function parseFencedBlock(block) {
 }
 
 // Odd split parts are the fences; an unclosed fence stays text.
-function renderMarkdown(text) {
+export function renderMarkdown(text) {
   const frag = document.createDocumentFragment();
   text.split(/(```[\s\S]*?```)/g).forEach((part, i) => {
     if (i % 2 === 0) { appendInlineMarkdown(frag, part); return; }
