@@ -18,7 +18,7 @@ import {
   goHome, goUp, goInto, makeSubdir,
   setWordsize, getWordsize, getWordsizeMask,
   setBinaryBase, getBinaryBase, resetBinaryState,
-  setApproxMode, setCoordMode,
+  setApproxMode, setCoordMode, getCasModulo,
 } from '../www/src/rpl/state.js';
 import { computeMenuPage } from '../www/src/ui/paging.js';
 import { headingKey, ALIASES, pushHistory } from '../www/src/ui/command-help.js';
@@ -31,7 +31,43 @@ import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, uni
 import { commandWordAt, commandHelpText } from '../www/src/ui/hover-help.js';
 import { holdToClear, holdForLines } from '../www/src/ui/input-area.js';
 import { parseCommandReference } from '../www/src/ui/command-reference.js';
+import { SOFT_MENU_METHODS, sigmaDataNote, modulusNote } from '../www/src/ui/soft-menus.js';
 import { assert, assertThrows } from './helpers.mjs';
+
+// A stand-in app with the soft-menu methods, which records the menu shown and what its keys do.
+function menuApp(extra = {}) {
+  const did = [];
+  const app = {
+    ...SOFT_MENU_METHODS, did, inputMode: 'rpl', menu: null, typing: false, changes: true,
+    setMenu(slots, kind, opts = {}) { app.menu = { slots, kind, folder: opts.folder ?? null }; },
+    _solverKey: (id, root) => ({ label: id, solver: root }),
+    commandTitle: (name) => name,
+    _tooFewArgumentsReason: () => '',
+    runCommandFromUI: (name) => { did.push(`run ${name}`); if (app.changes) app.stack.mark++; },
+    entry: { typeToken: (t) => did.push(`type ${t}`), _typingAtCursor: () => app.typing, error: null },
+    drawers: { showReference: (name) => did.push(`ref ${name}`) },
+    insertUnit: (unit, how = 'attach') => did.push(`${how} ${unit}`),
+    _heldKeyMenu: (options, anchor, label) => { app.held = { label, options: options.map((o) => o.text) }; options.forEach((o) => o.run()); },
+    toast: (text) => did.push(`toast ${text}`),
+    undoToast: (text) => did.push(`undo ${text}`),
+    stack: { mark: 0, undoMark() { return this.mark; } },
+    editStatData: () => did.push('edit ΣDAT'),
+    levelAction: (act, level) => did.push(`${act} ${level}`),
+    ...extra,
+  };
+  return app;
+}
+const menuLabels = (app) => app.menu.slots.map((slot) => slot.label).join(' ');
+function openedMenu(id, extra) {
+  const app = menuApp(extra);
+  app._showFamilyMenu(id);
+  return app;
+}
+function openedFolder(familyId, folderId) {
+  const app = openedMenu(familyId);
+  app.menu.slots.find((slot) => slot.label === folderId).onPress();
+  return app;
+}
 
 /* UI helpers — paging, physical-keyboard modifier shortcuts,
    interactive-stack pure helpers, Display click/tooltip rendering. */
@@ -319,9 +355,12 @@ import { assert, assertThrows } from './helpers.mjs';
     'stack: a matrix level\'s ⋯ menu has Inverse, Determinant, Eigenvalues and Eigenvectors when it is square, and Transpose, run on the level as its EVAL and →NUM are, as a unit level has Convert to… and a formula Plot');
   assert((appSrc.match(/this\.stack\.runOp\(\(\) => lookup\(op\)\.fn\(this\.stack, this\.entry\)\)/g) || []).length === 1 && appSrc.includes('const runIt = () => lookup(op).fn(this.stack, this.entry);'),
     'stack: a level menu\'s EVAL, →NUM, DBUG, →LIST, DUPN and DROPN run through Stack.runOp, so LASTARG gives their arguments as it does for a typed command');
-  assert(/onHold: \(anchor\) => this\._heldKeyMenu\(this\._heldUnitOptions\(unit\), anchor, 'Unit'\)/.test(appSrc)
-    && /return \[\{ text: `Convert level 1 to \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'convert'\) \}, divide\];/.test(appSrc)
-    && /const divide = \{ text: `Divide by \$\{unit\}`, run: \(\) => this\.insertUnit\(unit, 'divide'\) \};/.test(appSrc)
+  assert((() => {
+    const app = openedFolder('UNITS', UNIT_GROUPS[0].id);
+    const unit = app.menu.slots[1].label;
+    app.menu.slots[1].onHold(null);
+    return app.held.label === 'Unit' && app.held.options.join() === `Convert level 1 to ${unit},Divide by ${unit}` && app.did.join() === `convert ${unit},divide ${unit}`;
+  })()
     && /onHold: left && \(\(anchor\) => this\._heldKeyMenu\(\[left, right\]\.filter\(Boolean\)\.map\(\(words\) => \(\{ text: words\.join\(' … '\), run: type\(words\) \}\)\), anchor, 'Structures'\)\)/.test(appSrc) && !/_structureMenu/.test(appSrc),
     'units: a finger held on a UNITS soft key offers the shifted key\'s Convert and Divide through the held-key menu a BRCH key\'s structures use');
   assert(/\.\.\.\(isUnit\(value\) \? \[\{ label: 'CONV', title: 'Convert it to another unit \(CONVERT\)', onPress: act\('convert'\) \}\] : \[\]\)/.test(appSrc),
@@ -356,9 +395,9 @@ import { assert, assertThrows } from './helpers.mjs';
     && /this\._mbHeld = true;\s*this\.app\.buzzHold\(\);/.test(menubarAll) && /t\.done = true;\s*this\.app\.buzzHold\(\);/.test(menubarAll)
     && /setTimeout\(\(\) => \{ this\.app\.buzzHold\(\); begin\(\); \}, LONG_PRESS_MS\)/.test(readFileSync(new URL('../www/src/ui/drawer.js', import.meta.url), 'utf8')) && /press\.selecting = true;\s*this\.app\?\.buzzHold\(\);/.test(readFileSync(new URL('../www/src/ui/equation-editor.js', import.meta.url), 'utf8')),
     'touch: with key vibration on, a held finger buzzes once when it opens a level or soft-key menu, the whole-menu grid or the keypad key layers, starts a Variables drag or a writer selection, or clears the line');
-  assert(/UNIT_GROUPS\.map\(\(group\) => \(\{ label: group\.id, dir: true,/.test(appSrc) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),
+  assert(openedMenu('UNITS').menu.slots.slice(0, UNIT_GROUPS.length).every((slot, i) => slot.dir && slot.label === UNIT_GROUPS[i].id) && /\.pop \.grid button \{[^}]*overflow-wrap: anywhere;/.test(gridCss),
     'menus: the UNITS menu\'s group keys wear the folder tab, as submenu keys do on the HP, and a long name in the whole-menu grid wraps inside its key as it does on a narrow soft key');
-  assert(/const TVM_VARIABLES = \['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'\];/.test(appSrc) && /TVM: \(\) => TVM_VARIABLES\.map\(\(id\) => this\._solverKey\(id, id === 'PYR' \? null : 'TVMROOT'\)\),/.test(appSrc)
+  assert(openedMenu('TVM').menu.slots.slice(0, 6).map((slot) => `${slot.label}:${slot.solver}`).join(' ') === 'N:TVMROOT I%YR:TVMROOT PV:TVMROOT PMT:TVMROOT FV:TVMROOT PYR:null'
     && /onPress: act\('store'\),\s*onPressL: solve,\s*onPressR: act\('recall'\),/.test(appSrc) && /const solve = root \? act\('solve'\) : null;/.test(appSrc)
     && /if \(inProgramEntry\(this\.entry\.buffer\.slice\(0, this\.entry\.cursor\)\)\) \{ this\.entry\.typeToken\(`\$\{words\} `\); return; \}/.test(appSrc),
     'TVM menu: each variable\'s key stores level 1 in it, ⇦ solves for it (PYR has no solve) and ⇨ recalls it, as the HP\'s solver menus do; inside a program it types the words instead');
@@ -368,26 +407,35 @@ import { assert, assertThrows } from './helpers.mjs';
   assert(STAT_GROUPS.map((g) => g.id).join(' ') === 'DATA ΣPAR 1VAR PLOT FIT SUMS'
     && inFolders.every((n) => statNames.includes(n) || ['BARPLOT', 'HISTPLOT', 'SCATRPLOT'].includes(n)) && statNames.every((n) => inFolders.includes(n) || aliases.includes(n)) && new Set(inFolders).size === inFolders.length,
     `STAT_GROUPS: the folders hold every statistics command once, spelt as the HP spells it, in the HP's folder order, PLOT holding the three statistics plots (missing ${statNames.filter((n) => !inFolders.includes(n) && !aliases.includes(n))})`);
-  assert(/STAT: \(\) => this\._groupKeys\(STAT_GROUPS, 'STAT'\),/.test(appSrc)
-    && /_groupKeys\(groups, familyId\) \{\s*return groups\.map\(\(group\) => \(\{ label: group\.id, dir: true, .*?onPress: \(\) => this\._showGroupMenu\(group, familyId\) \}\)\);/.test(appSrc)
-    && /_showGroupMenu\(group, familyId\) \{\s*const back = \{ label: '◀ BACK', title: `Back to the \$\{menuById\(familyId\)\.title\} menu`, onPress: \(\) => this\._showFamilyMenu\(familyId\) \};\s*const edit = familyId === 'STAT' && group\.id === 'DATA'\n[^\n]*\n\s*this\.setMenu\(\[back, \.\.\.edit, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], familyId, \{ folder: group\.id \}\);/.test(appSrc),
+  assert((() => {
+    const app = openedMenu('STAT');
+    const folders = app.menu.slots.slice(0, STAT_GROUPS.length);
+    if (folders.map((slot) => slot.label).join(' ') !== STAT_GROUPS.map((g) => g.id).join(' ') || !folders.every((slot) => slot.dir)) return false;
+    folders[2].onPress();
+    const [back, key] = app.menu.slots;
+    const inFolder = app.menu.kind === 'STAT' && app.menu.folder === '1VAR'
+      && app.menu.slots.slice(1).map((slot) => slot.command).join(' ') === STAT_GROUPS[2].commands.join(' ');
+    key.onPress(); key.onPressL(); key.onPressR();
+    back.onPress();
+    return inFolder && back.label === '◀ BACK' && app.did.join() === 'run TOT,type TOT ,ref TOT' && app.menu.folder === null && menuLabels(app).startsWith('DATA ');
+  })(),
     'STAT menu: it opens on the HP\'s folders, DATA, ΣPAR, 1VAR, PLOT, FIT and SUMS, whose keys run, type and look up their commands as the flat list\'s do, with a BACK key');
   const casNames = allOps().filter((n) => lookup(n).category === 'CAS / symbolic');
   assert(CAS_GROUPS.map((g) => g.id).join(' ') === 'ALG CALC S.SLV TRIG EXP&LN'
     && CAS_GROUPS[0].commands.join(' ') === 'COLLECT EXPAND FACTOR LNCOLLECT LIN PARTFRAC SOLVE SUBST TEXPAND'
     && CAS_GROUPS.every((g) => g.commands.every((n) => casNames.includes(n) && new Set(g.commands).size === g.commands.length))
-    && /CAS: \(\) => this\._groupKeys\(CAS_GROUPS, 'CAS'\),/.test(appSrc),
+    && menuLabels(openedMenu('CAS')).startsWith(CAS_GROUPS.map((g) => g.id).join(' ')),
     `CAS menu: it opens on folders after the HP's CAS menus, ALG as the HP has it (COLLECT EXPAND FACTOR LNCOLLECT LIN PARTFRAC SOLVE SUBST TEXPAND), then CALC, S.SLV, TRIG and EXP&LN, every key a CAS command, so a phone reaches algebra in two taps instead of paging through nine (unknown ${CAS_GROUPS.flatMap((g) => g.commands).filter((n) => !casNames.includes(n))})`);
   assert(/this\.menuFolder = folder;/.test(appSrc)
     && /const inside = this\.menuFolder \?\? \(meta\.short === 'VARS' \? currentPath\(\)\.at\(-1\) : null\);\s*return \{ title: inside \? `\$\{meta\.short\} · \$\{inside\}` : meta\.short, short: this\.menuFolder \?\? meta\.short,/.test(appSrc)
-    && /this\.setMenu\(\[back, \.\.\.keys\], 'UNITS', \{ folder: group\.id \}\);/.test(appSrc)
+    && openedFolder('UNITS', UNIT_GROUPS[0].id).menu.folder === UNIT_GROUPS[0].id
     && /this\.setMenu\(\[back, \.\.\.group\.commands\.map\(\(name\) => this\._commandSlot\(name\)\)\], 'BASE', \{ folder: group\.id \}\);/.test(appSrc),
     'menu button: inside a folder it names the folder (TRIG · HYP, or HYP where it is short), as VARS names its directory, where it named only the family');
   {
     const { TRIG_GROUPS } = await import('../www/src/ui/menus.js');
     assert(TRIG_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'HYP: SINH ASINH COSH ACOSH TANH ATANH EXPM LNP1'
       && TRIG_GROUPS.every((g) => g.commands.every((n) => lookup(n)))
-      && /TRIG: \(\) => this\._groupKeys\(TRIG_GROUPS, 'TRIG'\),/.test(appSrc),
+      && menuLabels(openedMenu('TRIG')).startsWith(TRIG_GROUPS.map((g) => g.id).join(' ')),
       'TRIG menu: it opens on the HP\'s MTH HYP folder, in its order with EXPM and LNP1, where the hyperbolics sat on the third page');
   }
   {
@@ -395,11 +443,16 @@ import { assert, assertThrows } from './helpers.mjs';
     const intFamily = MENU_FAMILIES.find((f) => f.id === 'INTEGER');
     assert(INTEGER_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'INTEG: EULER IABCUV ICHINREM IDIV2 IEGCD IQUOT IREMAINDER ISPRIME? NEXTPRIME PA2B2 PREVPRIME / MODUL: ADDTMOD DIVMOD DIV2MOD EXPANDMOD FACTORMOD GCDMOD INVMOD MOD MODSTO MULTMOD POWMOD SUBTMOD'
       && INTEGER_GROUPS.every((g) => g.commands.every((n) => lookup(n))) && intFamily.keys.join(' ') === 'DIVIS FACTORS PROPFRAC'
-      && /INTEGER: \(\) => this\._groupKeys\(INTEGER_GROUPS, 'INTEGER'\),/.test(appSrc),
+      && menuLabels(openedMenu('INTEGER')).startsWith(INTEGER_GROUPS.map((g) => g.id).join(' ')),
       'INTGR menu: it opens on the HP\'s ARITH folders INTEG and MODUL, in its order, then DIVIS, FACTORS and PROPFRAC, where 30 keys ran over five pages');
-    assert(/const modulusNote = \(\) => `The modular commands work modulo \$\{getCasModulo\(\)\}`;/.test(appSrc)
-      && /: name === 'MODSTO' \? modulusNote : null;/.test(appSrc)
-      && /if \(group\.commands\.includes\('MODSTO'\)\) this\.toast\(`\$\{modulusNote\(\)\}; MODSTO sets it\.`, \{ key: 'modulus', transient: true \}\);/.test(appSrc),
+    assert((() => {
+      const app = openedFolder('INTEGER', 'MODUL');
+      const opened = app.did.join();
+      app.did.length = 0;
+      app.menu.slots.find((slot) => slot.command === 'MODSTO').onPress();
+      return opened === `toast ${modulusNote()}; MODSTO sets it.` && app.did.join() === `run MODSTO,undo ${modulusNote()}`
+        && modulusNote() === `The modular commands work modulo ${getCasModulo()}`;
+    })(),
       'MODUL folder: on a phone, which shows no CAS modes, opening it says the modulus the modular commands use, and the MODSTO key says the new one with Undo');
   }
   {
@@ -407,18 +460,26 @@ import { assert, assertThrows } from './helpers.mjs';
     const listFamily = MENU_FAMILIES.find((f) => f.id === 'LIST');
     assert(LIST_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'ELEM: GET GETI PUT PUTI SIZE POS HEAD TAIL / PROC: DOLIST DOSUBS NSUB ENDSUB STREAM REVLIST ADD SORT SEQ / CHARS: SUB REPL POS SIZE NUM CHR OBJ→ →STR HEAD TAIL SREPL'
       && LIST_GROUPS.every((g) => g.commands.every((n) => lookup(n))) && listFamily.keys.join(' ') === 'OBJ→ →LIST SUB REPL'
-      && /LIST: \(\) => this\._groupKeys\(LIST_GROUPS, 'LIST'\),/.test(appSrc),
+      && menuLabels(openedMenu('LIST')).startsWith(LIST_GROUPS.map((g) => g.id).join(' ')),
       'LIST menu: it opens on the HP\'s PRG LIST folders ELEM and PROC and its PRG CHARS string commands, then OBJ→ →LIST SUB REPL, where 35 keys ran over six pages');
   }
   const matrixFamily = MENU_FAMILIES.find((f) => f.id === 'MATRIX');
   assert(MATRIX_GROUPS.map((g) => g.id).join(' ') === 'MAKE NORM FACTR COL ROW' && matrixFamily.keys.join(' ') === 'LSQ'
     && MATRIX_GROUPS.every((g) => g.commands.every((n) => lookup(n)))
-    && /MATRIX: \(\) => this\._groupKeys\(MATRIX_GROUPS, 'MATRIX'\),/.test(appSrc),
+    && menuLabels(openedMenu('MATRIX')).startsWith(MATRIX_GROUPS.map((g) => g.id).join(' ')),
     'MATRIX menu: it opens as the HP\'s MTH MATR does, MAKE NORM FACTR COL ROW folders and then LSQ, every folder key a registered command, so a phone reaches a column or a factorization in two taps');
-  assert(/const SIGMA_DATA_KEYS = \['Σ\+', 'Σ-', 'CLΣ', 'STOΣ'\];/.test(appSrc) && /const note = SIGMA_DATA_KEYS\.includes\(name\) \? \(\) => sigmaDataNote\(varRecall\('ΣDAT'\)\) :/.test(appSrc)
-    && /onPress: \(\) => \(note \? this\._runNotedKey\(name, note\) :/.test(appSrc)
-    && /_runNotedKey\(name, note\) \{\s*const mark = this\.stack\.undoMark\(\);\s*this\.runCommandFromUI\(name, \{ asKey: true \}\);\s*if \(this\.stack\.undoMark\(\) === mark \|\| this\.entry\.error\) return;\s*this\.undoToast\(note\(\)\);/.test(appSrc)
-    && /return points \? `ΣDAT: \$\{points\} point\$\{points === 1 \? '' : 's'\}` : 'ΣDAT is empty';/.test(appSrc),
+  assert((() => {
+    const app = openedFolder('STAT', 'DATA');
+    const key = (name) => app.menu.slots.find((slot) => slot.command === name);
+    key('CLΣ').onPress();
+    app.changes = false;
+    key('Σ+').onPress();
+    app.changes = true;
+    app.entry.error = 'Bad argument type';
+    key('Σ-').onPress();
+    return app.did.join() === `run CLΣ,undo ${sigmaDataNote(varRecall('ΣDAT'))},run Σ+,run Σ-`
+      && sigmaDataNote(undefined) === 'ΣDAT is empty' && sigmaDataNote(Matrix([[Real(1), Real(2)]])) === 'ΣDAT: 1 point';
+  })(),
     'STAT menu: a Σ+, Σ-, CLΣ or STOΣ key that ran says how many points ΣDAT holds now, with Undo, since the stack alone shows nothing; typed into a program or failing, it says nothing');
   {
     const { BASE_KEYS, BASE_GROUPS, menuById, MENU_GROUPS } = await import('../www/src/ui/menus.js');
@@ -442,11 +503,11 @@ import { assert, assertThrows } from './helpers.mjs';
   {
     const { TIME_GROUPS } = await import('../www/src/ui/menus.js');
     assert(TIME_GROUPS.map((g) => `${g.id}: ${g.commands.join(' ')}`).join(' / ') === 'ALRM: ACK ACKALL STOALARM RCLALARM DELALARM FINDALARM'
-      && TIME_GROUPS[0].commands.every((n) => lookup(n)) && /TIME: \(\) => this\._groupKeys\(TIME_GROUPS, 'TIME'\),/.test(appSrc),
+      && TIME_GROUPS[0].commands.every((n) => lookup(n)) && menuLabels(openedMenu('TIME')).startsWith('ALRM '),
       'TIME menu: an ALRM folder of the HP\'s alarm commands leads the clock keys');
     const { KEY_LABELS } = await import('../www/src/ui/menus.js');
     assert(TIME_GROUPS[0].commands.map((n) => KEY_LABELS[n] ?? n).join(' ') === 'ACK ACKAL STOAL RCLAL DELAL FINDA'
-      && /label: KEY_LABELS\[name\] \?\? name,\s*command: name,/.test(appSrc),
+      && (() => { const app = menuApp(); const key = app._commandSlot('STOALARM'); key.onPress(); key.onPressL(); return key.label === 'STOAL' && key.command === 'STOALARM' && app.did.join() === 'run STOALARM,type STOALARM '; })(),
       'ALRM keys: the HP\'s five-letter faces, where STOALARM broke across a phone key as STOA and LARM; the key still runs and types the full name');
     assert(KEY_LABELS.VANDERMONDE === 'VANDE' && MATRIX_GROUPS.find((g) => g.id === 'MAKE').commands.includes('VANDERMONDE'),
       'MAKE folder: VANDERMONDE shows the HP\'s face VANDE, where a 280 px phone broke it over three lines as VAND, ERMO and NDE');
@@ -488,7 +549,7 @@ import { assert, assertThrows } from './helpers.mjs';
     const { MENU_FAMILIES } = await import('../www/src/ui/menus.js');
     const cplx = MENU_FAMILIES.find((f) => f.id === 'CPLX');
     assert(cplx.keys.join(' ') === 'RE IM C→R R→C ABS ARG SIGN NEG CONJ C→P P→C CMPLX RECT CYLIN SPHERE CMPLX?' && cplx.keys.every((n) => lookup(n))
-      && /const slots = \[\.\.\.keys, \.\.\.familyCommands\(family\)\.filter\(\(name\) => !keys\.includes\(name\)\)\]\.map/.test(appSrc),
+      && openedMenu('CPLX').menu.slots.slice(0, cplx.keys.length).map((slot) => slot.command).join(' ') === cplx.keys.join(' '),
       'CMPLX menu: the HP\'s RE IM C→R R→C ABS ARG / SIGN NEG CONJ first, ABS, SIGN and NEG from Arithmetic included, then the coordinate modes, with the rest of the family after its keys');
   }
   {
@@ -504,12 +565,29 @@ import { assert, assertThrows } from './helpers.mjs';
       'TYPES menu: the HP\'s PRG TYPE keys, OBJ→ →ARRY →LIST →STR →TAG →UNIT / C→R R→C NUM CHR DTAG EQ→ / TYPE VTYPE, so a phone converts between types from one menu');
     const time = MENU_FAMILIES.find((f) => f.id === 'TIME');
     assert(time.flagKeys.map(([flag, label]) => `${label}${flag}`).join(' ') === 'CLK-40 24H-41 D.M.Y-42'
-      && /const flagKeys = \(family\.flagKeys \?\? \[\]\)\.map\(\(key\) => this\._flagKey\(\.\.\.key\)\);/.test(appSrc)
-      && /on: \(\) => testUserFlag\(flag\),\s*onPress: \(\) => \{\s*if \(this\.entry\._typingAtCursor\(\)\) this\.entry\.typeToken\(`\$\{command\(\)\} `\);\s*else \(testUserFlag\(flag\) \? clearUserFlag : setUserFlag\)\(flag\);/.test(appSrc),
+      && (() => {
+        const app = openedMenu('TIME');
+        const key = app.menu.slots.find((slot) => slot.label === '24H');
+        const was = key.on();
+        key.onPress();
+        const flipped = key.on() === !was;
+        key.onPress();
+        app.typing = true;
+        key.onPress();
+        return key.toggle && flipped && key.on() === was && app.did.at(-1) === `type -41 ${was ? 'CF' : 'SF'} `;
+      })(),
       'TIME menu: CLK, 24H and D.M.Y keys after the commands show the clock in the status line and set the HP\'s clock and date formats (flags -40, -41 and -42), marked while set, and type -41 SF or CF inside a program');
   }
-  assert(/const MODE_KEYS = Object\.freeze\(\{\s*DEG: \['angle', 'DEG'\], RAD: \['angle', 'RAD'\], GRAD: \['angle', 'GRD'\], GRD: \['angle', 'GRD'\],\s*RECT: \['coordMode', 'RECT'\], CYLIN: \['coordMode', 'CYLIN'\], SPHERE: \['coordMode', 'SPHERE'\], CMPLX: \['complexMode', true\],\s*HEX: \['binaryBase', 'h'\], DEC: \['binaryBase', 'd'\], OCT: \['binaryBase', 'o'\], BIN: \['binaryBase', 'b'\],/.test(appSrc)
-    && /\.\.\.\(mode && \{ toggle: true, on: \(\) => calcState\[mode\[0\]\] === mode\[1\] \}\),/.test(appSrc),
+  assert((() => {
+    const app = menuApp();
+    const was = [calcState.angle, getBinaryBase()];
+    const marked = (names) => names.filter((name) => app._commandSlot(name).on?.()).join(' ');
+    setAngle('RAD'); setBinaryBase('h');
+    const lit = marked(['DEG', 'RAD', 'GRAD', 'HEX', 'DEC']);
+    setAngle(was[0]); setBinaryBase(was[1]);
+    return lit === 'RAD HEX' && ['DEG', 'RAD', 'GRAD', 'GRD', 'RECT', 'CYLIN', 'SPHERE', 'CMPLX', 'HEX', 'DEC', 'OCT', 'BIN'].every((name) => app._commandSlot(name).toggle)
+      && !app._commandSlot('SIN').toggle;
+  })(),
     'mode keys: DEG, RAD, GRAD, RECT, CYLIN, SPHERE, CMPLX, HEX, DEC, OCT and BIN keys in any command menu mark the mode in force, as the HP\'s DEG■ and HEX■ do');
   assert(/@container app \(max-width: 319px\) \{\s*\.ann-status \{ padding-left: 6px; padding-right: 4px; \}\s*\/\*[^*]*\*\/\s*\.ann-status:has\(\.ann-m\.e, \.ann-m\.halt, \.ann-m\.alarm, \.ann-m\.user\) \{ padding-left: 2px; padding-right: 2px; \}/.test(gridCss),
     'minimal view: with a level being edited, the status line gives up its side padding under 320 px, so the amber pencil no longer pushes the leave button 2 px off a 280 px screen');
@@ -1948,7 +2026,7 @@ setAngle('RAD');
     assert(TOOL_KEYS.join(' ') === 'EDIT VIEW RCL STO PURGE CLEAR CASCMD HELP' && TOOL_KEYS.filter((k) => k !== 'VIEW').every((k) => findOp(k))
       && MENU_GROUPS[0].ids.includes('TOOL') && menuById('TOOL')?.short === 'TOOL'
       && /else if \(id === 'TOOL'\) this\.setMenu\(TOOL_KEYS\.map\(\(key\) => \(key === 'VIEW' \? this\._viewKey\(\) : this\._commandSlot\(key\)\)\), 'TOOL'\);/.test(appSrc)
-      && /_viewKey\(\) \{\n    return \{ label: 'VIEW',[^\n]*onPress: \(\) => this\.levelAction\('view', 1\) \};/.test(appSrc),
+      && (() => { const app = menuApp(); const view = app._viewKey(); view.onPress(); return view.label === 'VIEW' && app.did.join() === 'view 1'; })(),
       'TOOL menu: the HP\'s TOOL keys EDIT, VIEW, RCL, STO, PURGE and CLEAR, then CASCMD and HELP, with VIEW showing level 1 full size, so minimal view (no keypad) has them a tap away');
   }
   assert(/setBeepHook\(\(hz, seconds\) => this\._buzzBeep\(beep\(hz, seconds\)\)\);/.test(appSrc)
@@ -2256,9 +2334,13 @@ setAngle('RAD');
 }
 
 {
-  const appSrc = readFileSync(new URL('../www/src/app.js', import.meta.url), 'utf8');
-  assert(/onHold: \(anchor\) => this\._heldKeyMenu\(this\._heldUnitOptions\(unit\), anchor, 'Unit'\)/.test(appSrc)
-    && /if \(this\.inputMode === 'equation' \|\| this\.inputMode === 'matrix'\) return \[\{ text: `Attach \$\{unit\}`, mark: '', run: \(\) => this\.insertUnit\(unit\) \}, divide\];/.test(appSrc),
+  assert((() => {
+    const app = openedFolder('UNITS', UNIT_GROUPS[0].id);
+    app.inputMode = 'equation';
+    const unit = app.menu.slots[1].label;
+    app.menu.slots[1].onHold(null);
+    return app.held.label === 'Unit' && app.held.options.join() === `Attach ${unit},Divide by ${unit}` && app.did.join() === `attach ${unit},divide ${unit}`;
+  })(),
     'units: a finger held on a unit key in a writer offers Attach and Divide, where it offered Convert level 1, which the writer refuses');
 }
 
@@ -4895,7 +4977,7 @@ const resetRun = await (async () => {
     && /restart\(\) \{\n\s*this\._restarts\+\+;\n\s*this\._ready = null;\n\s*this\._failed = false;\n\s*this\._script\?\.remove\(\);/.test(engineSrc)
     && engineSrc.includes('script.src = this._fresh(GIAC_JS);') && engineSrc.includes('this._fresh(GIAC_WASM)'),
     'algebra engine: a download still running after 45 s gets a note with Start over, which asks for a fresh download under a new query so it cannot join the stalled one; a slow one is never restarted on its own');
-  assert(/familyId === 'STAT' && group\.id === 'DATA'\n\s*\? \[\{ label: 'EDIT',[^\n]*onPress: \(\) => this\.editStatData\(\) \}\] : \[\];/.test(appSrc)
+  assert((() => { const app = openedFolder('STAT', 'DATA'); app.menu.slots[1].onPress(); return app.menu.slots[1].label === 'EDIT' && app.did.includes('edit ΣDAT') && openedFolder('STAT', '1VAR').menu.slots[1].label !== 'EDIT'; })()
     && /editStatData\(\) \{\n\s*if \(varRecall\('ΣDAT'\) !== undefined\) this\.editVariable\('ΣDAT'\);\n\s*else this\._beginEdit\(\{ kind: 'var', name: 'ΣDAT', fresh: true, was: NOT_STORED, label: 'Entering ΣDAT' \}\);/.test(appSrc)
     && appSrc.includes("const mode = edit.line ? 'rpl' : edit.fresh ? 'matrix'") && appSrc.includes('return value === undefined && !edit.fresh ? null : { ...edit, value, path: currentPath().join(\'/\') };')
     && appSrc.includes('if (value === undefined ? was !== NOT_STORED : sourceHash(value) !== was) return;') && appSrc.includes("edit.name === 'ΣDAT' ? `Stored ${sigmaDataNote(value)}` : `Stored ${edit.name}`"),

@@ -4,7 +4,7 @@ import { Display, escapeHtml, describeValue, suspendedProgramHtml, binaryBaseLab
 import { Keypad, hpKeyCode, typedKeyCode, keyForCode } from './ui/keyboard.js';
 import { MenuBar } from './ui/menubar.js';
 import { AppBar, installHint } from './ui/appbar.js';
-import { Drawers, CATEGORIES, familyCommands, signatureOf, pickFiles, UPLOAD_ACCEPT } from './ui/drawer.js';
+import { Drawers, CATEGORIES, signatureOf, pickFiles, UPLOAD_ACCEPT } from './ui/drawer.js';
 import { describeError, ERROR_KINDS } from './ui/errors.js';
 import { errorBannerHtml, haltedBannerHtml, lcdHtml } from './ui/banner.js';
 import { InputArea, restoreRollingTaps } from './ui/input-area.js';
@@ -17,7 +17,7 @@ import { Sheets } from './ui/sheets.js';
 import { Tour } from './ui/tour.js';
 import { chordFromEvent, findBinding, shortcutText } from './ui/actions.js';
 import { loadUiPrefs, saveUiPrefs, normalizeUiPrefs } from './ui/ui-prefs.js';
-import { MENU_FAMILIES, UNIT_GROUPS, STAT_GROUPS, CAS_GROUPS, MATRIX_GROUPS, INTEGER_GROUPS, TRIG_GROUPS, LIST_GROUPS, TIME_GROUPS, KEY_LABELS, VECTOR_KEYS, TOOL_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel, inCustomMenu, toggledCustomMenu, movedCustomMenu } from './ui/menus.js';
+import { MENU_FAMILIES, CAS_GROUPS, INTEGER_GROUPS, VECTOR_KEYS, TOOL_KEYS, BASE_KEYS, BASE_GROUPS, BRANCH_KEYS, CONSTANT_TITLES, menuById, unitConversions, chooseEntry, customMenuEntry, customMenuLabel, inCustomMenu, toggledCustomMenu, movedCustomMenu } from './ui/menus.js';
 import { convertValue } from './rpl/units.js';
 import { MODES, modeCommandPreview } from './ui/modes.js';
 import { computeMenuPage } from './ui/paging.js';
@@ -36,7 +36,7 @@ import { hasUnits } from './rpl/algebra.js';
 import {
   state as calcState, subscribe as subscribeState,
   varOrder, varList, varRecall, varStore, varStoreWhereFound, currentPath,
-  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getCasModulo, getUserKeys, standardKeysActive,
+  goInto, goHome, goUp, captureCalcState, restoreCalcState, getPromptMessage, getLcd, touchLcd, testUserFlag, setUserFlag, clearUserFlag, getUserKeys, standardKeysActive,
   batchStateNotifications, isSuspension, isSlicePause, clearHalted, haltMark, tagHalted, haltRun,
 } from './rpl/state.js';
 import { lookup, allOps, setGraphicsHook, setMenuHook, setOpenHook, setEditHook, setViewHook, setGameHook, setFilerHook, setOffHook, setTableHook, setLibraryHook, setPrintHook, setFontHooks, setTransferHooks, receivedName, receivedTarget, setBeepHook, setConlibHook, setKeyHook, setVersion, constantIds, constantValue, setRunSlice, withoutRunSlices, pausableRun, haltedLocals, recallVar, storeVar } from './rpl/ops.js';
@@ -50,6 +50,7 @@ import { plotSettings } from './rpl/ops/graphics.js';
 import { alongOpenName } from './ui/plot-engine.js';
 import { LEVEL_OPS, LEVEL_RANGE_OPS } from './ui/level-ops.js';
 import { topOverlay } from './ui/overlays.js';
+import { SOFT_MENU_METHODS, sigmaDataNote } from './ui/soft-menus.js';
 import { evalScratch, previewCommand } from './rpl/scratch.js';
 import {
   isProgram, isDirectory, isList, isName, isString, isTagged, isSymbolic, isValidHpIdentifier, isReservedHpName,
@@ -100,8 +101,6 @@ const APP_SHORTCUTS = new Map([
 // (under 576 px tall, or 840 px with a writer open) gets the compact keypad; the setting stays Full.
 const SHORT_WINDOW = globalThis.matchMedia?.('(max-height: 575px) and (max-width: 639px)');
 const SHORT_FOR_WRITER = globalThis.matchMedia?.('(max-height: 839px) and (max-width: 639px)');
-const TVM_VARIABLES = ['N', 'I%YR', 'PV', 'PMT', 'FV', 'PYR'];
-const SIGMA_DATA_KEYS = ['Σ+', 'Σ-', 'CLΣ', 'STOΣ'];
 const ALARM_FRESH_MS = 60000;
 const ALARM_WAIT_MAX_MS = 3600000;
 const DRAFT_DELAY_MS = 400;
@@ -116,18 +115,6 @@ function sourceHash(value) {
   return hash;
 }
 const BEEP_BUZZ_MAX_S = 5;
-// The mode commands whose keys mark the mode in force, as the HP's DEG■ and HEX■ do: [state field, value].
-const MODE_KEYS = Object.freeze({
-  DEG: ['angle', 'DEG'], RAD: ['angle', 'RAD'], GRAD: ['angle', 'GRD'], GRD: ['angle', 'GRD'],
-  RECT: ['coordMode', 'RECT'], CYLIN: ['coordMode', 'CYLIN'], SPHERE: ['coordMode', 'SPHERE'], CMPLX: ['complexMode', true],
-  HEX: ['binaryBase', 'h'], DEC: ['binaryBase', 'd'], OCT: ['binaryBase', 'o'], BIN: ['binaryBase', 'b'],
-});
-
-function sigmaDataNote(data) {
-  if (data !== undefined && !isMatrix(data) && !isVector(data)) return `ΣDAT holds ${describeValue(data).text}, not data`;
-  const points = isMatrix(data) ? data.rows.length : data?.items.length ?? 0;
-  return points ? `ΣDAT: ${points} point${points === 1 ? '' : 's'}` : 'ΣDAT is empty';
-}
 
 // A formula with units has no real values to draw, so it is not offered a plot, as in the equation writer.
 // A tagged formula, as TANL and F' leave, plots as the formula; the HP reads through a tag too.
@@ -145,8 +132,6 @@ function sortable(value) {
 }
 // Level actions that run a command on the level and a name: solve:X runs 'X' SOLVE.
 const NAMED_LEVEL_OPS = Object.freeze({ solve: 'SOLVE', deriv: 'DERIV', integ: 'RISCH' });
-
-const modulusNote = () => `The modular commands work modulo ${getCasModulo()}`;
 
 // A tutor step's title with its math, as the card shows it; the keys stay text, where * would read as emphasis.
 function tutorNote(step, tail) {
@@ -2375,81 +2360,6 @@ class App {
     ];
   }
 
-  _showFamilyMenu(id) {
-    const family = MENU_FAMILIES.find((f) => f.id === id) ?? MENU_FAMILIES[0];
-    // A family's keys put the HP's own menu first, commands from other families included, and the rest follow.
-    const keys = family.keys ?? [];
-    const slots = [...keys, ...familyCommands(family).filter((name) => !keys.includes(name))].map((name) => this._commandSlot(name));
-    const flagKeys = (family.flagKeys ?? []).map((key) => this._flagKey(...key));
-    const lead = {
-      UNITS: () => UNIT_GROUPS.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.units.length} units`, onPress: () => this._showUnitMenu(group) })),
-      TVM: () => TVM_VARIABLES.map((id) => this._solverKey(id, id === 'PYR' ? null : 'TVMROOT')),
-      STAT: () => this._groupKeys(STAT_GROUPS, 'STAT'),
-      CAS: () => this._groupKeys(CAS_GROUPS, 'CAS'),
-      MATRIX: () => this._groupKeys(MATRIX_GROUPS, 'MATRIX'),
-      TIME: () => this._groupKeys(TIME_GROUPS, 'TIME'),
-      INTEGER: () => this._groupKeys(INTEGER_GROUPS, 'INTEGER'),
-      TRIG: () => this._groupKeys(TRIG_GROUPS, 'TRIG'),
-      LIST: () => this._groupKeys(LIST_GROUPS, 'LIST'),
-    }[family.id];
-    this.setMenu([...(lead ? lead() : []), ...slots, ...flagKeys], family.id);
-  }
-
-  // TOOL's VIEW, which is no command here: level 1 full size in a sheet, as a level's View shows it.
-  _viewKey() {
-    return { label: 'VIEW', title: 'Show level 1 full size, with Edit, Copy and Share', onPress: () => this.levelAction('view', 1) };
-  }
-
-  // A flag the HP sets from a form, such as TIME's clock and date formats, as a key marked while the flag is set.
-  _flagKey(flag, label, what) {
-    const command = () => `${flag} ${testUserFlag(flag) ? 'CF' : 'SF'}`;
-    return {
-      label,
-      title: `${what} (flag ${flag})`,
-      toggle: true,
-      on: () => testUserFlag(flag),
-      onPress: () => {
-        if (this.entry._typingAtCursor()) this.entry.typeToken(`${command()} `);
-        else (testUserFlag(flag) ? clearUserFlag : setUserFlag)(flag);
-      },
-    };
-  }
-
-  _commandSlot(name) {
-    const mode = MODE_KEYS[name];
-    const note = SIGMA_DATA_KEYS.includes(name) ? () => sigmaDataNote(varRecall('ΣDAT')) : name === 'MODSTO' ? modulusNote : null;
-    return {
-      label: KEY_LABELS[name] ?? name,
-      command: name,
-      title: `${this.commandTitle(name)} · ↰ types it · ↱ opens the reference`,
-      blockedReason: () => this._tooFewArgumentsReason(name),
-      onPress: () => (note ? this._runNotedKey(name, note) : this.runCommandFromUI(name, { asKey: true })),
-      onPressL: () => this.entry.typeToken(`${name} `),
-      onPressR: () => this.drawers.showReference(name),
-      ...(mode && { toggle: true, on: () => calcState[mode[0]] === mode[1] }),
-    };
-  }
-
-  // Σ+, Σ- and CLΣ change only ΣDAT, and MODSTO only the modulus, so on a phone their keys say what it is now.
-  _runNotedKey(name, note) {
-    const mark = this.stack.undoMark();
-    this.runCommandFromUI(name, { asKey: true });
-    if (this.stack.undoMark() === mark || this.entry.error) return;
-    this.undoToast(note());
-  }
-
-  _groupKeys(groups, familyId) {
-    return groups.map((group) => ({ label: group.id, dir: true, title: `${group.title}: ${group.commands.join(' ')}`, onPress: () => this._showGroupMenu(group, familyId) }));
-  }
-
-  _showGroupMenu(group, familyId) {
-    const back = { label: '◀ BACK', title: `Back to the ${menuById(familyId).title} menu`, onPress: () => this._showFamilyMenu(familyId) };
-    const edit = familyId === 'STAT' && group.id === 'DATA'
-      ? [{ label: 'EDIT', title: 'Edit the statistics matrix ΣDAT as a table; a spreadsheet range pastes into it', onPress: () => this.editStatData() }] : [];
-    this.setMenu([back, ...edit, ...group.commands.map((name) => this._commandSlot(name))], familyId, { folder: group.id });
-    if (group.commands.includes('MODSTO')) this.toast(`${modulusNote()}; MODSTO sets it.`, { key: 'modulus', transient: true });
-  }
-
   // The HP's solver menus: a variable's key stores level 1 in it, ⇦ solves for it with root and ⇨ recalls it; inside
   // a program it types the same as words. The multiple-equation solver's keys also mark a stored variable known.
   _solverKey(id, root, known = null) {
@@ -2514,26 +2424,6 @@ class App {
     const keys = mes.keys.map((id) => id && { ...this._solverKey(id, 'MROOT', 'MUSER'), toggle: true, on: () => !!mesMenu()?.known.has(id) });
     const all = { label: 'ALL', title: 'Solve for every variable not marked known (MROOT)', onPress: this._solverAct('"ALL" MROOT', () => this._solverRoot('MROOT', Str('ALL'))) };
     this.setMenu([...keys, all, this._commandSlot('MUSER'), this._commandSlot('MCALC')], 'MES', { preservePage: refresh, folder: mes.title || null });
-  }
-
-  _showUnitMenu(group) {
-    const back = { label: '◀ BACK', title: 'Back to the Units menu', onPress: () => this._showFamilyMenu('UNITS') };
-    const keys = group.units.map((unit) => ({
-      label: unit,
-      title: `Attach _${unit} to the number you are typing, or multiply level 1 by it · ↰ converts level 1 to ${unit} · ↱ divides by ${unit}`,
-      onPress: () => this.insertUnit(unit),
-      onPressL: () => this.insertUnit(unit, 'convert'),
-      onPressR: () => this.insertUnit(unit, 'divide'),
-      onHold: (anchor) => this._heldKeyMenu(this._heldUnitOptions(unit), anchor, 'Unit'),
-    }));
-    this.setMenu([back, ...keys], 'UNITS', { folder: group.id });
-  }
-
-  // A writer has no level 1 to convert, so a held unit key offers what its tap and ↱ do there.
-  _heldUnitOptions(unit) {
-    const divide = { text: `Divide by ${unit}`, run: () => this.insertUnit(unit, 'divide') };
-    if (this.inputMode === 'equation' || this.inputMode === 'matrix') return [{ text: `Attach ${unit}`, mark: '', run: () => this.insertUnit(unit) }, divide];
-    return [{ text: `Convert level 1 to ${unit}`, run: () => this.insertUnit(unit, 'convert') }, divide];
   }
 
   commandTitle(name) {
@@ -3371,6 +3261,7 @@ class App {
     }
   }
 }
+Object.assign(App.prototype, SOFT_MENU_METHODS);
 
 // INFORM's values as the form shows them: NOVAL, the HP's empty field, shows as nothing.
 function informText(v) {
