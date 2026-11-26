@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.26 (2026-11-25)
+**Latest release:** v0.9.27 (2026-11-26)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.27 — 2026-11-26
+
+- Changed: nothing a user sees. The code that reads tool calls,
+  follow-up suggestions and think blocks out of the assistant's replies,
+  and tidies the RPL it writes, moved from `ai/chat-bot.js` to
+  `ai/reply-parse.js`.
 
 ## v0.9.26 — 2026-11-25
 
