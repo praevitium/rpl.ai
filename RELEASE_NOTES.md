@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.29 (2026-11-26)
+**Latest release:** v0.9.30 (2026-11-26)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.30 — 2026-11-26
+
+- Changed: nothing a user sees. What the page keeps through a reload
+  (the menu place, the line being typed, undo, a program left halted
+  and the autosave) is set up in `ui/keep.js` instead of `app.js`.
 
 ## v0.9.29 — 2026-11-26
 
