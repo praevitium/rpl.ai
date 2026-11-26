@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.25 (2026-11-25)
+**Latest release:** v0.9.26 (2026-11-25)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.26 — 2026-11-25
+
+- Changed: nothing a user sees. The markdown renderer for the
+  assistant's replies and the tutor's cards moved from `ai/chat-bot.js`
+  to `ai/markdown.js`, the first part of splitting the assistant's code.
 
 ## v0.9.25 — 2026-11-25
 
