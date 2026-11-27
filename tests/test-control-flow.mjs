@@ -18,7 +18,7 @@ import {
   setApproxMode,
   setHalted, getHalted, clearHalted, clearAllHalted, haltedDepth,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, top } from './helpers.mjs';
 
 /* Control flow — IFT / IFTE, IF/THEN/ELSE/END, WHILE, DO/UNTIL, START,
    FOR/NEXT/STEP (incl. Integer-aware variant), IFERR. */
@@ -7340,7 +7340,6 @@ const localI = () => { const t = new Stack(); t.push(Name('i')); lookup('EVAL').
 {
   resetHome();
   runLine('5 `X` STO');
-  const top = (line) => format(runLine(line).peek());
   assert(top('« IF `X>0` THEN 1 ELSE 2 END » EVAL') === '1' && top('« IF `X<0` THEN 1 ELSE 2 END » EVAL') === '2', 'IF takes an algebraic test');
   assert(top('« CASE `X==5` THEN 11 END 99 END » EVAL') === '11', 'CASE takes an algebraic test');
   assert(top('« 0 WHILE `X>0` REPEAT 1 + DUP 3 ≥ IF THEN 0 `X` STO END END » EVAL') === '3', 'WHILE takes an algebraic test');

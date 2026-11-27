@@ -17,7 +17,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, top } from './helpers.mjs';
 
 /* List ops — GET / PUT / HEAD / TAIL / SUB / →LIST / LIST→ / POS. */
 
@@ -2061,7 +2061,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 /* A string's characters are its code points, as NUM and CHR take them, so an emoji from a phone keyboard is one character, never a cut pair. */
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('"😀a" SIZE') === '2' && top('"a😀b😀" SIZE') === '4' && top('"日本語" SIZE') === '3', 'SIZE counts an emoji as one character');
   assert(top('"😀a" 1 1 SUB') === '"😀"' && top('"a😀b" 2 2 SUB') === '"😀"' && top('"a😀b" 3 3 SUB') === '"b"' && top('"😀a" 2 9 SUB') === '"a"',
     'SUB takes whole characters and clamps past the end');

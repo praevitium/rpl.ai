@@ -22,7 +22,7 @@ import {
   getRealMaxExp, setRealMaxExp, resetRealMaxExp,
   REAL_MAX_EXP_DEFAULT, REAL_MAX_EXP_MIN, REAL_MAX_EXP_MAX,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, shown, top } from './helpers.mjs';
 
 /* Numerics: basic arithmetic, complex, SQRT, stack ops, parser+format basics,
    trig, angle modes, R↔D, div-by-zero, FLOOR/CEIL/IP/FP/SIGN/MOD/MIN/MAX. */
@@ -7336,7 +7336,6 @@ function _arrayEq(a, b) {
 
 /* @ starts a comment that runs to the end of the line, in an entry, in a program and in a string of commands, but not inside a string. */
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('1 2 + @ a comment') === '3', 'an @ comment at the end of an entry is dropped');
   assert(top('« 1 @ note\n2 + » EVAL') === '3', 'an @ comment inside a program ends at the line break');
   assert(top('"1 @ x\n2 +" STR→') === '3', 'STR→ drops @ comments too');
@@ -7422,7 +7421,6 @@ function _arrayEq(a, b) {
 
 // C2P and P2C: the AUR's permutation { 3 4 5 2 1 } and its cycles { { 1 3 5 } { 2 4 } }, signature -1.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   assert(shown('{ { 1 3 5 } { 2 4 } } C2P') === '{ 3 4 5 2 1 }', 'C2P turns cycles into a permutation');
   assert(shown('{ 3 4 5 2 1 } P2C') === '{ { 1 3 5 } { 2 4 } } | -1', 'P2C gives the cycles and the signature');
   assert(shown('{ 1 2 3 } P2C') === '{  } | 1', 'P2C of the identity has no cycles and signature 1');
@@ -7441,7 +7439,6 @@ function _arrayEq(a, b) {
 
 // FANNING and DARCY: 16/Re for laminar flow, Colebrook's equation past Re = 2100, DARCY four times FANNING.
 {
-  const top = (line) => format(runLine(line).peek());
   const num = (line) => Number(runLine(line).peek().value);
   assert(top('0.0001 1000 FANNING') === '0.016', 'FANNING of laminar flow is 16/Re');
   assert(top('0.0001 1000 DARCY') === '0.064', 'DARCY of laminar flow is 64/Re');
@@ -7458,7 +7455,6 @@ function _arrayEq(a, b) {
 
 // ZFACTOR: Dranchuk, Purvis and Robinson's fit to the Standing-Katz chart over the AUR's range.
 {
-  const top = (line) => format(runLine(line).peek());
   const num = (line) => Number(runLine(line).peek().value);
   const A = [0.31506237, -1.04670990, -0.57832729, 0.53530771, -0.61232032, -0.10488813, 0.68157001, 0.68446549];
   const fit = (tr, pr, z) => {
@@ -7480,7 +7476,6 @@ function _arrayEq(a, b) {
 // GAMMA's Lanczos product t^(x+1/2) e^-t overflowed a double from x = 142 on, where Γ itself holds to 171.6, and ERF, ZETA and the
 // like turned NaN on a huge argument and showed JavaScript's own message.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('150.5 GAMMA') === '4.6610726271E261' && top('142.5 GAMMA') === '2.25990910999E244', 'GAMMA: 142.5 and 150.5 hold their value where the formula gave ∞');
   assert(top('171.5 GAMMA') === '9.48336756682E307' && top('170.5 FACT') === top('171.5 GAMMA') && top('172.5 GAMMA') === '∞', 'GAMMA and FACT of a fraction run up to the largest double and give ∞ past it');
   assert(top('1E10 GAMMA') === '∞' && top('1E300 GAMMA') === '∞', 'GAMMA of a huge argument is ∞, as just past the largest double, and not a JavaScript error');
@@ -7508,7 +7503,6 @@ function _arrayEq(a, b) {
 
 // RND and TRNC on an array round or truncate each entry, as the AUR's examples show.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('[ 2.34907 3.96351 2.73453 ] -2 RND') === '[ 2.3 4. 2.7 ]', 'AUR: [ 2.34907 3.96351 2.73453 ] -2 RND is [ 2.3 4 2.7 ]');
   assert(top('[ 2.34907 3.96351 2.73453 ] -2 TRNC') === '[ 2.3 3.9 2.7 ]', 'AUR: [ 2.34907 3.96351 2.73453 ] -2 TRNC is [ 2.3 3.9 2.7 ]');
   assert(top('[[ 1.234 5.678 ][ 9.1011 2.3456 ]] 2 RND') === '[[ 1.23 5.68 ][ 9.1 2.35 ]]', 'RND rounds a matrix to decimal places');
@@ -7518,7 +7512,6 @@ function _arrayEq(a, b) {
 
 // LN of a negative exact number in complex mode (flag -103) is LN of its size plus i*π, as on the HP.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('-1 LN') === '`LN(-1)`' && top("'LN(-1)' EVAL") === '`LN(-1)`', 'LN(-1) stays as it is with complex results off');
   runLine('-103 SF');
   assert(top('-1 LN') === '`i*π`' && top("'LN(-1)' EVAL") === '`i*π`', "LN(-1) is 'i*π' in exact and complex mode");
@@ -7531,7 +7524,6 @@ function _arrayEq(a, b) {
 
 // A number too large for a JavaScript double must not turn into an error that IFERR cannot trap.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('1E400 0 %') === '0.' && top('1E400 1E400 %T') === '100.' && top('1E400 2 %CH') === '-100.', '%, %T and %CH work on numbers beyond 1E308');
   assert(top('1E300 1E300 %') === '1.E598' && top('200 15 %') === '30.' && top('3 7 %T') === '233.333333333' && top('50 75 %CH') === '50.',
     '% keeps the size of a large product, as * does, and everyday percentages are unchanged');

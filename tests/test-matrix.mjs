@@ -19,7 +19,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode, setCoordMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, top } from './helpers.mjs';
 
 // The statistics commands read ΣDAT, as on the HP, so a case's data on level 1 moves there first.
 function stat(op, s) {
@@ -3900,7 +3900,6 @@ function _approxMatEqual(A, B, tol) {
 
 /* →DIAG and DIAG→, the AUR's diagonal commands on the MATRIX menu's MAKE folder. */
 {
-  const top = (src) => format(runLine(src).peek());
   assert(top('[ 1 2 3 ] { 3 } DIAG→') === '[[ 1 0 0 ][ 0 2 0 ][ 0 0 3 ]]' && top('[ 1 2 3 ] { 2 4 } DIAG→') === '[[ 1 0 0 0 ][ 0 2 0 0 ]]',
     'DIAG→ makes a square matrix from one dimension and drops diagonal elements past a shorter diagonal');
   assert(top('[ 1 2 ] { 3 } DIAG→') === '[[ 1 0 0 ][ 0 2 0 ][ 0 0 0 ]]' && top('[ 1.5 2 ] { 2.4 } DIAG→') === '[[ 1.5 0. ][ 0. 2 ]]',
@@ -3935,7 +3934,6 @@ function _approxMatEqual(A, B, tol) {
 
 // Symbolic matrices: products and sums leave out 1* and +0, and the linear algebra goes through Giac.
 {
-  const top = (src) => format(runLine(src).peek());
   assert(top('[[ X 1 ][ 2 Y ]] [[ A B ][ C D ]] *') === '[[ `X*A + C` `X*B + D` ][ `2*A + Y*C` `2*B + Y*D` ]]',
     `* of symbolic matrices writes C, not 1*C (got ${top('[[ X 1 ][ 2 Y ]] [[ A B ][ C D ]] *')})`);
   assert(top('[[ X 0 ][ 0 Y ]] [ 1 1 ] *') === '[ X Y ]', '* of a symbolic matrix and vector drops 0 and 1 terms');
@@ -3974,7 +3972,6 @@ function _approxMatEqual(A, B, tol) {
 // The AUR's RDM, CON and TRN: sizes that differ, a complex array that stays complex, and a variable name for the array.
 {
   resetHome();
-  const top = (line) => format(runLine(line).peek());
   assert(top('[[ 2 3 4 ][ 1 6 9 ]] { 8 } RDM') === '[ 2 3 4 1 6 9 0 0 ]', 'AUR: [[ 2 3 4 ][ 1 6 9 ]] { 8 } RDM is [ 2 3 4 1 6 9 0 0 ]');
   assert(top('[[ 2 3 4 ][ 1 6 9 ]] { 2 2 } RDM') === '[[ 2 3 ][ 4 1 ]]', 'RDM to fewer entries drops the ones at the end of the row order');
   assert(top('[ 1 2 3 4 ] { 2 3 } RDM') === '[[ 1 2 3 ][ 4 0 0 ]]', 'RDM of a vector to a larger matrix fills out with zeros');
@@ -4009,7 +4006,6 @@ function _approxMatEqual(A, B, tol) {
 
 // SUB and REPL on a matrix take positions as { row column } or as a count in row order.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('[[ 1 1 1 1 ][ 1 1 1 1 ][ 1 1 1 1 ]] 6 [[ 2 2 ][ 2 2 ]] REPL') === '[[ 1 1 1 1 ][ 1 2 2 1 ][ 1 2 2 1 ]]', 'AUR: REPL of a matrix at position 6 reads it in row order');
   assert(top('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] { 2 2 } [[ 0 0 ][ 0 0 ]] REPL') === '[[ 1 2 3 ][ 4 0 0 ][ 7 0 0 ]]', 'REPL of a matrix at { row column } as before');
   assertThrows(() => runLine('[[ 1 2 3 ][ 4 5 6 ][ 7 8 9 ]] 9 [[ 0 0 ]] REPL'), /Bad argument value/, 'a patch that runs past the matrix is Bad argument value');

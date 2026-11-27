@@ -12,7 +12,10 @@
        shared across test files.
      - `runOp(opName, ...preStack)` — create a fresh Stack, push the
        pre-stack in order (level-k pushed k-th → ends up on top-of-stack
-       last, matching RPL convention), run the op, return `peek()`. */
+       last, matching RPL convention), run the op, return `peek()`.
+     - `top(src)`, `shown(src)`, `line(src)` — what `runLine(src)` leaves,
+       formatted: level 1; every level from level 1 up joined by ' | ';
+       every level from the bottom up joined by spaces. */
 
 import { basename } from 'node:path';
 
@@ -174,3 +177,10 @@ export function runLine(src, s = new Stack()) {
   }
   return s;
 }
+
+// What a line leaves on the stack, as the display shows it: level 1, every level from level 1 up, or every level from the
+// bottom up on one line.
+import { format } from '../www/src/rpl/formatter.js';
+export const top = (src) => format(runLine(src).peek());
+export const shown = (src) => runLine(src).snapshot().map((v) => format(v)).reverse().join(' | ');
+export const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');

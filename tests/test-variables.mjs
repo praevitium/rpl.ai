@@ -18,7 +18,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, shown, top } from './helpers.mjs';
 
 /* Variables — STO / RCL / PURGE / VARS + directory nav (CRDIR / UPDIR / HOME /
    PATH) + subdir protection + variable/directory state UNDO. */
@@ -2062,7 +2062,6 @@ clearAllUserFlags();
 
 // STEQ and RCEQ store and recall EQ in the current directory.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top("'X^2+1' STEQ RCEQ") === '`X^2 + 1`', 'STEQ stores EQ and RCEQ recalls it unevaluated');
   runLine("'EQ' PURGE");
   assertThrows(() => runLine('RCEQ'), /Undefined name/, 'RCEQ without an EQ is Undefined name');
@@ -2070,7 +2069,6 @@ clearAllUserFlags();
 
 // DEF, UNASSIGN, PUSH and POP, as the AUR has them.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   assert(shown("'NEW(A,B)=(A-B)/(A+B)' DEF") === '`NEW(A,B) = (A - B)/(A + B)`', 'DEF defines NEW and leaves the equation');
   assert(shown("'NEW(2,1)' EVAL") === '1/3', 'DEF\'s NEW(2,1) is 1/3');
   runLine("{ NEW } PURGE");
@@ -2133,7 +2131,6 @@ clearAllUserFlags();
 
 // LOCAL and UNBIND: ← names bound until UNBIND, across command lines as the AUR's example has it.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   assert(shown("{ ←A '←B=2' } LOCAL") === "{ ←A `←B = 2` }", 'LOCAL gives its list back');
   assert(shown('←B ←A') === '2 | 0', 'LOCAL: a name with no value is 0, and the variables outlive the line that made them');
   assert(shown('UNBIND') === '{ `←B = 2` `←A = 0` }', 'UNBIND gives the variables back, newest first, as the AUR\'s example does');
@@ -2194,7 +2191,6 @@ clearAllUserFlags();
 
 // STORE, RENAME, DIR and ▶ from the AUR.
 {
-  const top = (line) => format(runLine(line).peek());
   runLine("2 'Y7' STO");
   assert(top("'17*Y7' 'Z7' STORE") === '34', 'STORE evaluates 17*Y and returns 34, as the AUR shows');
   assert(format(varRecall('Z7')) === '34', 'STORE keeps the number, not the expression');
@@ -2216,7 +2212,6 @@ clearAllUserFlags();
 // The AUR's STO: obj 'name(index)' STO replaces one element, and name(index) in an algebraic reads it.
 {
   resetHome();
-  const top = (line) => format(runLine(line).peek());
   runLine("{ 5 6 7 } 'L' STO [ 5 6 7 ] 'V' STO [[ 1 2 ][ 3 4 ]] 'M' STO");
   assert(top("'L(2)' EVAL") === '6' && top("'V(3)' EVAL") === '7' && top("'M(2,1)' EVAL") === '3',
     "'A(n)' and 'M(n,m)' give an element of a list, a vector and a matrix");

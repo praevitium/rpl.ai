@@ -17,7 +17,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, top } from './helpers.mjs';
 
 /* EVAL, program execution, quoted-name fidelity, formatStackTop. */
 
@@ -502,7 +502,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 {
   const { setVersion } = await import('../www/src/rpl/ops.js');
   const { getHalted, getPromptMessage, clearAllHalted, clearPromptMessage } = await import('../www/src/rpl/state.js');
-  const top = (line) => format(runLine(line).peek());
   setVersion('9.9.9', '2026-10-19');
   assert(top('VER') === '1.520261019', 'VER gives Giac 1.5 and the build date as V.YYYYMMDD');
   assert(/^"rpl\.ai is dedicated to .* Salut"$/.test(top('"Salut" DEDICACE')), 'DEDICACE gives the dedication, extended by its argument');
@@ -554,7 +553,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 // A built-in command named in an algebraic runs on its numeric arguments when no function rule folds it, as on the HP.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top("'UTPN(0,1,0.5)' EVAL") === '0.308537538726', 'UTPN in an algebraic evaluates');
   assert(top("'NDIST(0,1,0)' →NUM") === '0.398942280401', 'NDIST in an algebraic evaluates under →NUM');
   assert(top("'TRNC(1.27,1)' →NUM") === '1.2', 'TRNC with two arguments evaluates under →NUM');
@@ -568,7 +566,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 // i in an algebraic is the imaginary unit under →NUM and APPROX, as π is the number; EXACT EVAL keeps it symbolic.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top("'3+4*i' →NUM") === '(3, 4)', "→NUM works '3+4*i' out to a complex number");
   assert(top("'(1+i)*(1-i)' →NUM") === '(2, 0)' && top("'i^2' →NUM") === '(-1, 0)', 'products and powers of i are worked out');
   assert(top("'ABS(3+4*i)' →NUM") === '5.' && top("'RE(i+2)' →NUM") === '2.', 'a function of an expression holding i is worked out');
@@ -582,7 +579,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 // A closed expression whose value is not real is worked out under →NUM and APPROX, as the stack commands give it.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top("'SQRT(-4)' →NUM") === '(0, 2)' && top("'LN(-1)' →NUM") === '(0, 3.14159265359)' && top("'LOG(-100)' →NUM") === '(2, 1.36437635384)',
     "→NUM gives 'SQRT(-4)', 'LN(-1)' and 'LOG(-100)' their complex values");
   assert(top("'(-8)^(1/3)' →NUM") === '(1, 1.73205080757)', 'a negative base to a fractional power is the principal root');
@@ -597,7 +593,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 // EVAL of an array with symbolic entries evaluates each entry; a numeric array stays as it is.
 {
-  const top = (line) => format(runLine(line).peek());
   runLine("3 'EVX' STO");
   assert(top('[[ EVX 1 ][ 2 EVY ]] EVAL') === '[[ 3 1 ][ 2 EVY ]]', 'EVAL puts a stored value into a symbolic matrix entry');
   assert(top("[ EVX 'EVX^2' ] EVAL") === '[ 3 9 ]', 'EVAL evaluates each entry of a symbolic vector');

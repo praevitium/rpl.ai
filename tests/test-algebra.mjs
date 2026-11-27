@@ -27,7 +27,7 @@ import {
   evalAst, freeVars, defaultFnEval,
 } from '../www/src/rpl/algebra.js';
 import { giac } from '../www/src/rpl/cas/giac-engine.mjs';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, line, shown, top } from './helpers.mjs';
 
 /* Symbolic algebra — parser, simplify, DERIV, EXPAND, COLLECT, FACTOR,
    SUBST, SOLVE, textbook-mode pretty-print, EXACT/APPROX numeric-eval,
@@ -83,7 +83,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
   assert(formatAlgebra(hp) === 'Σ(k=1,10,k^2)' && formatAlgebra(parseAlgebra('Σ(k^2,k,1,10)')) === 'Σ(k=1,10,k^2)'
          && formatAlgebra(parseAlgebra(formatAlgebra(parseAlgebra('Σ(k=1,N-1,k^2)+1')))) === 'Σ(k=1,N - 1,k^2) + 1',
          "Σ prints as the HP writes it, Σ(k=1,10,k^2), where it showed Giac's Σ(k^2,k,1,10), and reads back the same");
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   assert(shown("'k' 1 10 'k^2' Σ") === '385' && shown("'k' 1 'N' 'k' Σ") === '`Σ(k=1,N,k)`',
          "Σ as a command takes the index, its limits and the summand: 'k' 1 10 'k^2' Σ is 385, and a symbolic limit leaves the sum");
   giac._setFixtures({ 'sum(A^N,N,1,5)': 'A^5+A^4+A^3+A^2+A' });
@@ -1435,7 +1434,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 // | (where) substitutes locally, with no CAS, and leaves the result for EVAL as the HP does.
 {
-  const top = (src) => format(runLine(src).peek());
   assert(top("'X^2+Y' { X 2 Y 3 } |") === '`2^2 + 3`' && top("'X^2+Y' { X 2 Y 3 } | EVAL") === '7' && top("'X+Y' { X Y Y X } |") === '`Y + X`'
     && top("'A*X' { X 'B+1' } |") === '`A*(B + 1)`' && top("'X' { X 2 } |") === '2',
     '| (where): each name takes the value after it, all at once, unsimplified, so EVAL finishes the sum');
@@ -2948,7 +2946,6 @@ giac._setFixtures({
 
 {
   // The AUR's examples, which take arrays; the result keeps the form it was given.
-  const top = (line) => format(runLine(line).peek());
   assert(top('[ 2 -3 4 -5 ] PCOEF') === '[ 1 2 -25 -26 120 ]' && top('{ 2 -3 4 -5 } PCOEF') === '{ 1 2 -25 -26 120 }',
     `PCOEF takes the AUR's root array and gives a coefficient array (got ${top('[ 2 -3 4 -5 ] PCOEF')})`);
   assert(top('[ 1 2 -25 -26 120 ] 8 PEVAL') === '3432', `PEVAL takes the AUR's coefficient array (got ${top('[ 1 2 -25 -26 120 ] 8 PEVAL')})`);
@@ -3394,7 +3391,6 @@ for (const name of ['HERMITE', 'LEGENDRE']) {
 /* The families keep whole coefficients, past the 2^53 a double holds, and LEGENDRE comes over its power-of-two denominator as the
    AUR shows it; a degree whose coefficients would fill the memory says so where the page would have frozen. */
 {
-  const top = (src) => format(runLine(src).peek());
   assert(top('4 LEGENDRE') === '`(35*X^4 - 30*X^2 + 3)/8`', 'LEGENDRE(4) is (35*X^4-30*X^2+3)/8, as the AUR shows');
   assert(top('12 LEGENDRE') === '`(676039*X^12 - 1939938*X^10 + 2078505*X^8 - 1021020*X^6 + 225225*X^4 - 18018*X^2 + 231)/1024`', 'LEGENDRE(12) has whole numbers over 1024');
   assert(top('3 LEGENDRE') === '`(5*X^3 - 3*X)/2`' && top('2 LEGENDRE') === '`(3*X^2 - 1)/2`' && top('1 LEGENDRE') === '`X`' && top('0 LEGENDRE') === '`1`', 'LEGENDRE of 0 to 3 is 1, X, (3*X^2-1)/2 and (5*X^3-3*X)/2');
@@ -6036,7 +6032,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // The 0.7.1 CAS commands, with the AUR's examples as real Giac answers them.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   for (const [line, fixtures, want] of [
     ["'EXP(5*LN(X))' EXP2POW", [['exp2pow(exp(5*ln(X)))', 'X^5']], '`X^5`'],
     ["'EXP(5*LN(X))' EXP2HYP", [], '`SINH(5*LN(X)) + COSH(5*LN(X))`'],
@@ -6070,7 +6065,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // The 0.7.2 calculus commands, with the AUR's examples as real Giac answers them.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   const field = "[ '4*X*Y+Z' '2*X^2+6*Y*Z' 'X+3*Y^2' ] [ X Y Z ]";
   for (const [line, fixtures, want] of [
     ["'Y^2-3*Y+2' 'Y' RISCH", [['integrate(Y^2-3*Y+2,Y)', 'Y^3/3-3*Y^2/2+2*Y']], '`Y^3/3 - 3*Y^2/2 + 2*Y`'],
@@ -6101,7 +6095,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // The 0.7.3 linear algebra commands, with the AUR's examples as real Giac answers them.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   const m = '[[1 1 2][2 1 3][3 1 4]]';
   for (const [line, fixtures, want] of [
     [`${m} KER`, [['ker([[1,1,2],[2,1,3],[3,1,4]])', '[[1,1,-1]]']], '{ [ 1 1 -1 ] }'],
@@ -6139,7 +6132,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // APPLY, QUOTE and DROITE, as the AUR has them.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top("{ 'X+1' 2 } 'F' APPLY") === '`F(X + 1,2)`', 'APPLY builds F(X+1,2)');
   assert(top("'SIN(X)' QUOTE") === '`SIN(X)`', 'QUOTE gives its argument back');
   assert(top('(1,2) (3,4) DROITE') === '`Y = X - 1. + 2.`', 'DROITE gives the AUR\'s Y=X-1.+2. through (1,2) and (3,4)');
@@ -6153,7 +6145,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // SYLVESTER, GAUSS, RREFMOD, DIAGMAP and LCXM, with the AUR's examples as real Giac answers them.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   const answers = [
     [(c) => c.startsWith('(A->{') && c.endsWith('([[1,2],[2,4]])'), '[[1,0],matrix[[1,2],[0,1]]]'],
     [(c) => c.startsWith('(A->{') && c.endsWith('(q2a(X^2+2*A*X*Y,[X,Y]))'), '[[1,-A^2],matrix[[1,A],[0,1]]]'],
@@ -6563,7 +6554,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // Eigenvalues as numbers when the CAS has no closed form or the matrix holds decimals, and singular values as the AUR counts them.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   const num = (v) => (isComplex(v) ? [Number(v.re), Number(v.im)] : [Number(v.value), 0]);
   const near = (x, y) => Math.abs(x[0] - y[0]) < 1e-9 && Math.abs(x[1] - y[1]) < 1e-9;
   // Whether every column of the eigenvector matrix is an eigenvector for the eigenvalue of its position.
@@ -8493,7 +8483,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 }
 
 {
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   giac._clear();
   giac._setFixtures({
     'series(1+sin(X)^2,X=0,5,polynom)': '1+X^2-1/3*X^4',
@@ -8532,7 +8521,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 }
 
 {
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   giac._clear();
   giac._setFixtures({ 'diff(X^2,X)': '2*X', 'diff(x*Y,x)': 'Y', 'series(cos(X),X=0,4,polynom)': '1-1/2*X^2+1/24*X^4' });
   assert(line("'X^2' DERVX") === '`2*X`' && line("'COS(X)' TAYLOR0") === '`1 - 1/2*X^2 + 1/24*X^4`',
@@ -8542,7 +8530,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 }
 
 {
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   giac._clear();
   giac._setFixtures({
     'diff(A*X^2,X)': '2*A*X', 'integrate(A*X^2,X)': '1/3*A*X^3', 'solve(X^2-A,X)': '[√A,-√A]',
@@ -8558,7 +8545,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 }
 
 {
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   giac._clear();
   giac._setFixtures({
     'diff(A*X^3+B*X^2,X)': 'A*3*X^2+B*2*X', 'diff(C*exp(2*X),X)': 'C*2*exp(2*X)', 'diff(A*X^2*B,X)': 'A*2*X*B', 'diff(A/X,X)': '-A/X^2',
@@ -8571,7 +8557,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 }
 
 {
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   giac._clear();
   giac._setFixtures({ 'solve(sin(X)-1,X)': '[1/2*pi]', 'zeros(cos(X),X)': '[1/2*pi,(-1)/2*pi]' });
   assert(line("'SIN(X)=1' 'X' SOLVE") === '{ `X = 1/2*π` }', 'SOLVE shows Giac\'s pi as π, as the rest of the app does');
@@ -8580,7 +8565,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 }
 
 {
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   setApproxMode(false);
   assert(line("'1/3+1/6' EVAL") === '1/2' && line("'2/4' EVAL") === '1/2' && line("'1/3*3' EVAL") === '1' && line("'(2/3)^-2' EVAL") === '9/4',
     'EVAL works fractions exactly in EXACT mode, as the HP does: 1/3+1/6 is 1/2');
@@ -8595,7 +8579,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 }
 
 {
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   setApproxMode(false);
   assert(line("(1,2) 'Z' STO 'Z*2' EVAL 'Z' PURGE") === '(2, 4)' && line("(1,2) 'Z' STO 'ABS(Z)' EVAL 'Z' PURGE") === '2.2360679775' && line("(1,2) 'Z' STO 2 'N' STO 'N*Z' EVAL { Z N } PURGE") === '(2, 4)',
     'EVAL works an algebraic out with the commands when a variable holds a complex number, as the HP does: Z*2 with Z = (1,2) is (2, 4)');
@@ -8644,7 +8627,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assertThrows(() => runLine("'1/0' EVAL"), /Infinite result/, "EVAL of 1/0 is the HP's Infinite result, not a 1/0 to keep");
   assertThrows(() => runLine("'1/(2-2)' →NUM"), /Infinite result/, '→NUM of a division that folds to zero is Infinite result too');
   assertThrows(() => runLine("'0^-1' EVAL"), /Infinite result/, 'EVAL of 0^-1 is Infinite result');
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   assert(line("'X/0' EVAL") === '`X/0`' && line("'1/X' EVAL") === '`1/X`', 'a division by zero with a name in it stays symbolic');
 }
 
@@ -8824,7 +8806,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 /* DIV, CURL and LAPL: the AUR's vector calculus examples, from Giac's divergence, curl and laplacian. */
 {
-  const top = (src) => format(runLine(src).peek());
   giac._clear();
   giac._setFixtures({
     'divergence([X^2*Y,X^2*Y,Y^2*Z],[X,Y,Z])': 'X^2+2*X*Y+Y^2',
@@ -8853,7 +8834,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // ↓MATCH, ↑MATCH, FDISTRIB, SHOW and QUAD, with the AUR's examples.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   assert(shown(".5 { .5 'SIN(π/6)' } ↓MATCH") === '`SIN(π/6)` | 1.', '↓MATCH replaces .5 with SIN(π/6) and says it did');
   assert(shown("'SIN(U+V)' { 'SIN(&A+&B)' 'SIN(&A)*COS(&B)+COS(&A)*SIN(&B)' } ↓MATCH") === '`SIN(U)*COS(V) + COS(U)*SIN(V)` | 1.',
     '↓MATCH expands SIN(U+V) through the wildcards &A and &B');
@@ -8881,7 +8861,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // MSLV solves the AUR's system numerically through Giac's fsolve.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   giac._clear();
   giac._setFixture('fsolve([sin(X)+Y,X+sin(Y)-1],[X,Y],[0,0])', '[1.82384112611,-0.968154636175]');
   assert(shown("[ 'SIN(X)+Y' 'X+SIN(Y)=1' ] [ X Y ] [ 0 0 ] MSLV")
@@ -8895,7 +8874,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // DESOLVE and LDEC, with real Giac's answers: the HP's d1Y(X) is Giac's diff(Y(X),X) and its c_0 is the HP's cC0.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   giac._clear();
   giac._setFixture('desolve(diff(Y(X),X)+2*Y(X)=exp(3*X),Y(X))', '(5*c_0*exp(-2*X)+exp(3*X))/5');
   giac._setFixture('desolve([diff(Y(X),X)+2*Y(X)=exp(3*X),Y(0)=1],Y(X))', '(4*exp(-2*X)+exp(3*X))/5');
@@ -8915,7 +8893,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // SVD and SIGNTAB, with real Giac's answers.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   giac._clear();
   giac._setFixture('[svd(evalf([[1,2],[3,4],[5,6]]))]',
     '[[[0.883461017699,0.2298476964],[0.240782492133,0.52474481876],[-0.401896033433,0.819641941121]],[0.514300580659,9.52551809157],[[-0.784894453267,0.619629483829],[0.619629483829,0.784894453267]]]');
@@ -8936,7 +8913,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // STURM, TRIG and TABVAR, with real Giac's answers.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   giac._clear();
   giac._setFixtures({
     'factors(X^3+1)': '[X+1,1,X^2-X+1,1]',
@@ -8996,7 +8972,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // The HP's dn: EVAL differentiates a built-in function in its nth argument; ∞ executed gives the algebraic ∞.
 {
-  const top = (line) => format(runLine(line).peek());
   giac._clear();
   giac._setFixture('diff(sin(rplD1),rplD1)', 'cos(rplD1)');
   giac._setFixture('diff(cos(rplD1),rplD1)', '-sin(rplD1)');
@@ -9010,7 +8985,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // CHINREM and DOMAIN, with real Giac's answers.
 {
-  const shown = (line) => runLine(line).snapshot().map((v) => format(v)).reverse().join(' | ');
   giac._clear();
   giac._setFixture('chinrem([X^2+1,X+2],[X-1,X+3],X)', '[9*X+23,X^2+5*X+6]');
   assert(shown("[ 'X^2+1' 'X+2' ] [ 'X-1' 'X+3' ] CHINREM") === '[ `9*X + 23` `X^2 + 5*X + 6` ]',
@@ -9030,7 +9004,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // SEVAL: existing variables put in, each argument of the top level simplified, the top level left alone.
 {
-  const top = (line) => format(runLine(line).peek());
   giac._clear();
   runLine("'π' 'Y7' STO");
   giac._setFixture('simplify(sin(3*X-π+2*Z-(2*X-Z)))', '-sin(X+3*Z)');
@@ -9046,7 +9019,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 // EVAL hands an expression still holding ∞ to the CAS, as the AUR's ATAN(-∞) example needs.
 {
   const { astToGiac } = await import('../www/src/rpl/cas/giac-convert.mjs');
-  const top = (line) => format(runLine(line).peek());
   giac._clear();
   giac._setFixtures({
     'atan(-infinity)': '-pi/2',
@@ -9066,7 +9038,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 // ?, the HP's undefined result: the CAS's undef both ways, and anything worked out from it is ?.
 {
   const { astToGiac } = await import('../www/src/rpl/cas/giac-convert.mjs');
-  const top = (line) => format(runLine(line).peek());
   giac._clear();
   giac._setFixtures({ 'undef+1': 'undef', 'atan(undef)': 'undef' });
   assert(top('?') === '`?`', '? executed gives the algebraic ?');
@@ -9079,7 +9050,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // RATIO, the HP's prefix form of /: on the stack and as RATIO(A,2) in an expression.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('6 3 RATIO') === '2', 'RATIO divides two numbers as / does');
   assert(top("'A' 2 RATIO") === '`A/2`', 'RATIO of a name and a number is A/2');
   assert(top("'RATIO(A,2)+1'") === '`A/2 + 1`', 'RATIO(A,2) in an expression reads as A/2');
@@ -9088,7 +9058,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // CAS commands take an array of expressions entry by entry, as EXPAND's AUR entry says.
 {
-  const top = (line) => format(runLine(line).peek());
   giac._setFixtures({
     'diff(sin(T),T)': 'cos(T)',
     'diff(T^2,T)': '2*T',
@@ -9147,7 +9116,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   const { giac } = await import('../www/src/rpl/cas/giac-engine.mjs');
   giac._clear();
   giac._setFixtures({ 'expand((X+1)^2)': 'X^2+2*X+1', 'expand((X-1)^2)': 'X^2-2*X+1', 'diff(X^2,X)': '2*X', 'diff(sin(X),X)': 'cos(X)' });
-  const line = (src) => runLine(src).snapshot().map((v) => format(v)).join(' ');
   assert(line("{ '(X+1)^2' { '(X-1)^2' 5 } } EXPAND") === '{ `X^2 + 2*X + 1` { `X^2 - 2*X + 1` 5 } }',
     'EXPAND takes a list element by element, a list inside it too, and leaves a number as it is');
   assert(line("{ 'X^2' 'SIN(X)' } 'X' DERIV") === '{ `2*X` `COS(X)` }',
@@ -9231,7 +9199,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 
 // EVAL gathers like terms and like factors, and drops identities.
 {
-  const top = (line) => format(runLine(line).peek());
   const cases = [
     ["'X+X'", '`2*X`'], ["'2*X+3*X'", '`5*X`'], ["'X-X'", '0'], ["'X/2+X'", '`3*X/2`'], ["'1+X+2'", '`X + 3`'],
     ["'X*Y+Y*X'", '`2*X*Y`'], ["'X^2+2*X+X^2'", '`2*X^2 + 2*X`'], ["'SIN(X)+SIN(X)'", '`2*SIN(X)`'],
@@ -9292,7 +9259,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
   assert(show("'%CH(A,B)'") === '`%CH(A,B)`' && show("'%T(A+1,B)*2'") === '`%T(A + 1,B)*2`' && show("'%(A,B)'") === '`%(A,B)`',
     'percent functions: %(x,y), %T(x,y) and %CH(x,y) read and print as written, where they were Invalid algebraic');
   assert(show("'%ch(a,B)'") === '`%CH(a,B)`', 'percent functions: the name reads in lower case, as a built-in function does');
-  const top = (src) => format(runLine(src).peek());
   assert(top("'%CH(1,5)' EVAL") === '400' && top("'%(200,15)' EVAL") === '30' && top("'%T(4,1)' EVAL") === '25',
     'percent functions: EVAL works out whole numbers as the commands do');
   assert(top("'%CH(3,4)' EVAL") === '100/3' && top("'%T(3,4)' EVAL") === '400/3',
@@ -9319,7 +9285,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 // evaluated: FACTOR(X^2+5*X+6) is X^2+5*X+6 FACTOR. A command with several results gives them as a list, calls nest, a function
 // the algebra already works out or leaves symbolic is unchanged, and a call the command cannot work out stays as it was.
 {
-  const top = (src) => format(runLine(src).peek());
   giac._clear();
   giac._setFixtures({
     'factor(X^2+5*X+6)': '(X+2)*(X+3)',
@@ -9346,7 +9311,6 @@ for (const cmd of ['TRIGCOS', 'TRIGSIN', 'TRIGTAN']) {
 // too. A function the algebra evaluator cannot take an array in, ABS([3,4]), runs as the command. Outside a call it is still no
 // formula.
 {
-  const top = (src) => format(runLine(src).peek());
   const call = parseAlgebra('DET([[1,2],[3,4]])');
   assert(call.kind === 'fn' && call.args.length === 1 && call.args[0].kind === 'var' && call.args[0].name === '[[1,2],[3,4]]',
     'array arguments: the parser holds a matrix among a call\'s arguments as the text it was written in');

@@ -18,7 +18,7 @@ import {
   setBinaryBase, getBinaryBase, resetBinaryState,
   setApproxMode,
 } from '../www/src/rpl/state.js';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, top } from './helpers.mjs';
 
 /* BinaryInteger type, STWS wordsize, HEX/DEC/OCT/BIN display, bitwise ops,
    B→R / R→B converters, parse-time literal truncation. */
@@ -1076,7 +1076,6 @@ setBinaryBase(null);
 
 // NEG of a binary integer is its two's complement in the wordsize, as the AUR says.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('64 STWS #1h NEG') === '#FFFFFFFFFFFFFFFFh', '#1h NEG is all ones at 64 bits');
   assert(top('8 STWS #5h NEG') === '#FBh' && top('8 STWS #FFh NEG') === '#1h', 'at 8 bits #5h NEG is #FBh and #FFh NEG is #1h');
   runLine('16 STWS');

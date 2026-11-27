@@ -10,7 +10,7 @@ import {
   multiplyUexpr, divideUexpr, inverseUexpr, powerUexpr,
   sameDims, scaleOf, toBaseUexpr, uexprEqual, unitSize,
 } from '../www/src/rpl/units.js';
-import { assert, assertThrows, runLine } from './helpers.mjs';
+import { assert, assertThrows, runLine, top } from './helpers.mjs';
 
 {
   const u = parseUnitExpr('m');
@@ -820,7 +820,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 // F0λ: the black-body fraction below λ, checked against a direct integration of Planck's law.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('2.898E-6 1000 F0λ') === '0.250106293888', 'F0λ at λT = 2898 μm·K is a quarter, Wien\'s peak');
   assert(top('1E-5 1000 F0λ') === '0.914156971', 'F0λ at λT = 10000 μm·K');
   assert(top('2898_nm 726.85_°C F0λ') === '0.250106293888', 'F0λ converts λ and T from their units');
@@ -829,7 +828,6 @@ import { assert, assertThrows, runLine } from './helpers.mjs';
 
 // SIDENS: silicon's intrinsic carrier density, about 1E10 per cm³ at room temperature.
 {
-  const top = (line) => format(runLine(line).peek());
   assert(top('300 SIDENS') === '9887307042.09', 'SIDENS at 300 K is about 1E10 per cm³');
   assert(top('26.85_°C SIDENS') === '9887307042.09_1/cm^3', 'SIDENS converts the temperature and answers in 1/cm^3');
   assert(top("'T' SIDENS") === '`SIDENS(T)`' && top("'SIDENS(300)' →NUM") === '9887307042.09', 'SIDENS of a name stays symbolic and evaluates later');
