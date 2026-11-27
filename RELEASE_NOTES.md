@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.32 (2026-11-27)
+**Latest release:** v0.9.33 (2026-11-27)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.33 — 2026-11-27
+
+- Changed: nothing a user sees. `npm run bump` moves the version in
+  package.json, package-lock.json and the release notes together, and a
+  test checks the three agree.
 
 ## v0.9.32 — 2026-11-27
 
