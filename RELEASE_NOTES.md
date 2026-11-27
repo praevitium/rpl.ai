@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.33 (2026-11-27)
+**Latest release:** v0.9.34 (2026-11-27)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.34 — 2026-11-27
+
+- Changed: the README gives the registry's command count, 838 where it
+  said 801, and a test now keeps it and the reference's in-app badges in
+  step with the registry.
 
 ## v0.9.33 — 2026-11-27
 
