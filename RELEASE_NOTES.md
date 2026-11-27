@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.30 (2026-11-26)
+**Latest release:** v0.9.31 (2026-11-26)
 
 ---
 
@@ -20,6 +20,12 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.31 — 2026-11-26
+
+- Changed: nothing a user sees. The tests' `top`, `shown` and `line`
+  helpers, written out 64 times across ten test files, are shared from
+  `tests/helpers.mjs`.
 
 ## v0.9.30 — 2026-11-26
 
