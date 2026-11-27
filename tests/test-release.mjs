@@ -31,3 +31,15 @@ assert(noteBullet('Changed: nothing a user sees. The markdown renderer for the a
   try { withRelease('# Notes\n', '1.2.4', '2026-01-02', 'Added: y.'); } catch { refused = true; }
   assert(refused, 'bump: notes without a stamp or a release heading are refused, not written');
 }
+
+{
+  const { badgedReference } = await import('../scripts/update-hp50-badges.mjs');
+  const { allOps } = await import('../www/src/rpl/ops.js');
+  const reference = read('www/docs/hp50-commands.html');
+  const { html, inAppCount, totalCount } = badgedReference(reference);
+  assert(html === reference,
+    `reference: every command's in-app badge and link match the registry (${inAppCount} of ${totalCount}); npm run update-hp50-badges brings them up to date`);
+  const claimed = /command set: (\d+) commands/.exec(read('README.md'))?.[1];
+  assert(Number(claimed) === allOps().length,
+    `README: the command count it gives (${claimed}) is the registry's (${allOps().length})`);
+}

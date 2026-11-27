@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The generator behind hp50-commands.html isn't checked in, so this edits its regular markup in place.
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { allOps } from '../www/src/rpl/ops.js';
@@ -44,43 +44,43 @@ function isRegistered(display) {
   return !!(alias && registered.has(alias));
 }
 
-let html = readFileSync(HTML_PATH, 'utf8');
+// The reference with each command's badge and link marked by whether the app has it, and the counts in its intro.
+export function badgedReference(source) {
+  const idToInApp = new Map();
+  let h2Count = 0;
+  let html = source.replace(
+    /<h2 id="(cmd-[^"]+)">([^<]+?) <span class="(?:in-app|not-in-app)">(?:in app|not in app)<\/span>/g,
+    (_m, id, display) => {
+      h2Count += 1;
+      const inApp = isRegistered(display);
+      idToInApp.set(id, inApp);
+      const cls   = inApp ? 'in-app' : 'not-in-app';
+      const label = inApp ? 'in app' : 'not in app';
+      return `<h2 id="${id}">${display} <span class="${cls}">${label}</span>`;
+    });
 
-const idToInApp = new Map();
-let h2Count = 0;
-html = html.replace(
-  /<h2 id="(cmd-[^"]+)">([^<]+?) <span class="(?:in-app|not-in-app)">(?:in app|not in app)<\/span>/g,
-  (_m, id, display) => {
-    h2Count += 1;
-    const inApp = isRegistered(display);
-    idToInApp.set(id, inApp);
-    const cls   = inApp ? 'in-app' : 'not-in-app';
-    const label = inApp ? 'in app' : 'not in app';
-    return `<h2 id="${id}">${display} <span class="${cls}">${label}</span>`;
-  });
+  if (h2Count === 0) throw new Error('No <h2 id="cmd-…"> entries matched — has the markup changed?');
 
-if (h2Count === 0) {
-  console.error('No <h2 id="cmd-…"> entries matched — has the markup changed?');
-  process.exit(1);
+  html = html.replace(
+    /<a href="(#cmd-[^"]+)"(?:\s+class='notinapp')?>([^<]+)<\/a>/g,
+    (m, href, label) => {
+      const id = href.slice(1);
+      if (!idToInApp.has(id)) return m;
+      return idToInApp.get(id)
+        ? `<a href="${href}">${label}</a>`
+        : `<a href="${href}" class='notinapp'>${label}</a>`;
+    });
+
+  const inAppCount = [...idToInApp.values()].filter(Boolean).length;
+  const totalCount = idToInApp.size;
+  html = html.replace(
+    /(\d+) commands extracted from the HP 50g Advanced User's Reference Manual\. (\d+) are implemented in this RPL app\./,
+    `${totalCount} commands extracted from the HP 50g Advanced User's Reference Manual. ${inAppCount} are implemented in this RPL app.`);
+  return { html, inAppCount, totalCount };
 }
 
-html = html.replace(
-  /<a href="(#cmd-[^"]+)"(?:\s+class='notinapp')?>([^<]+)<\/a>/g,
-  (m, href, label) => {
-    const id = href.slice(1);
-    if (!idToInApp.has(id)) return m;
-    return idToInApp.get(id)
-      ? `<a href="${href}">${label}</a>`
-      : `<a href="${href}" class='notinapp'>${label}</a>`;
-  });
-
-const inAppCount = [...idToInApp.values()].filter(Boolean).length;
-const totalCount = idToInApp.size;
-html = html.replace(
-  /(\d+) commands extracted from the HP 50g Advanced User's Reference Manual\. (\d+) are implemented in this RPL app\./,
-  `${totalCount} commands extracted from the HP 50g Advanced User's Reference Manual. ${inAppCount} are implemented in this RPL app.`);
-
-writeFileSync(HTML_PATH, html);
-
-console.log(
-  `Updated ${HTML_PATH}: ${inAppCount} in-app, ${totalCount - inAppCount} not-in-app of ${totalCount} commands.`);
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  const { html, inAppCount, totalCount } = badgedReference(readFileSync(HTML_PATH, 'utf8'));
+  writeFileSync(HTML_PATH, html);
+  console.log(`Updated ${HTML_PATH}: ${inAppCount} in-app, ${totalCount - inAppCount} not-in-app of ${totalCount} commands.`);
+}
