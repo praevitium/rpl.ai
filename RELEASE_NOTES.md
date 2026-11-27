@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.31 (2026-11-26)
+**Latest release:** v0.9.32 (2026-11-27)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.32 — 2026-11-27
+
+- Changed: nothing a user sees. `tests/test-types.mjs` (12,000 lines)
+  is split along its section banners into four files: core types,
+  wrapper composition, EXACT-mode lifts, and the cell audits with the
+  rejection pins.
 
 ## v0.9.31 — 2026-11-26
 
