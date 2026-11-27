@@ -49,6 +49,7 @@ const FILES = [
   './test-offline.mjs',
   './test-actions.mjs',
   './test-errors.mjs',
+  './test-release.mjs',
 ];
 
 function runFile(file) {

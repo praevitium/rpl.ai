@@ -55,7 +55,7 @@ These are house conventions, not project documentation. Follow them so they don'
 - Commit straight to main, then push main.
 - Commit only when asked.
 - **Restart the dev server before every push**, after committing: `pkill -f '[l]ive-server --port=5050'; setsid npm run serve >/dev/null 2>&1 < /dev/null &`. Its `preserve` step regenerates `build-info.js` and `precache.js`, so the app on port 5050 shows the build being pushed.
-- **Bump the version with every push** (package.json, package-lock.json, and the latest-release stamp and an entry in RELEASE_NOTES.md). Patch unless told otherwise; don't leave the bump uncommitted.
+- **Bump the version with every push** (package.json, package-lock.json, and the latest-release stamp and an entry in RELEASE_NOTES.md). Patch unless told otherwise; don't leave the bump uncommitted. `npm run bump -- "Changed: …"` does all four, and `tests/test-release.mjs` checks they agree.
 - Commit subjects are **short and lowercase**, imperative mood, no scope prefix, no trailing period (e.g. `fix cursor`, `add katex support`), four or five words. Follow with a one- or two-sentence body. Never add trailers such as Co-Authored-By.
 - Keep each commit to one logical change.
 - When asked to "commit as you go", commit each coherent chunk as it lands and push at the end.
