@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.37 (2026-11-28)
+**Latest release:** v0.9.38 (2026-11-28)
 
 ---
 
@@ -20,6 +20,11 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.38 — 2026-11-28
+
+- Added: 40 program, string and list tasks to the RPL benchmark, now 152
+  tasks, each reference answer checked in the interpreter.
 
 ## v0.9.37 — 2026-11-28
 
