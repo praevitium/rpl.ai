@@ -1657,7 +1657,8 @@ www/                  The app: static files served as-is
   hp50-all.json       Example variables loaded on first launch
   vendor/             Giac, decimal.js, fraction.js, complex.js, CodeMirror, KaTeX, Mermaid
 tests/                Node test suites, one area per file
-scripts/              Build info, offline precache, README screenshots, command-reference upkeep
+scripts/              Build info, offline precache, README screenshots, command-reference upkeep, version bump
+bench/                RPL benchmark tasks with reference answers
 screenshots/          Images used above
 utils/                Pre-commit hook: sanity smoke, optional full and persist suites
 .github/workflows/    Tests, then publishes www/ to GitHub Pages on every push to main
@@ -1688,6 +1689,10 @@ local Chrome through Playwright (`CHROME_PATH` points it at another
 browser). Name scenes to redo only those: `npm run screenshots -- hero
 phone`. `RPLAI_SCREENSHOT_LLM` and `RPLAI_SCREENSHOT_MODEL` add the
 assistant scene.
+
+`bench/rpl-tasks.json` holds RPL tasks, each with a prompt, a reference
+solution and the stack it leaves; `npm run bench` runs every solution in the
+interpreter and lists any that no longer match.
 
 What changed is in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 

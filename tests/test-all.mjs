@@ -50,6 +50,7 @@ const FILES = [
   './test-actions.mjs',
   './test-errors.mjs',
   './test-release.mjs',
+  './test-bench.mjs',
 ];
 
 function runFile(file) {

@@ -1,0 +1,582 @@
+[
+ {
+  "id": "stack-001",
+  "area": "stack",
+  "prompt": "Swap the two numbers on the stack.",
+  "setup": "1 2",
+  "solution": "SWAP",
+  "expect": [
+   "2",
+   "1"
+  ]
+ },
+ {
+  "id": "stack-002",
+  "area": "stack",
+  "prompt": "Duplicate level 1.",
+  "setup": "5",
+  "solution": "DUP",
+  "expect": [
+   "5",
+   "5"
+  ]
+ },
+ {
+  "id": "stack-003",
+  "area": "stack",
+  "prompt": "Drop level 1.",
+  "setup": "1 2",
+  "solution": "DROP",
+  "expect": [
+   "1"
+  ]
+ },
+ {
+  "id": "stack-004",
+  "area": "stack",
+  "prompt": "Bring level 3 to level 1.",
+  "setup": "1 2 3",
+  "solution": "ROT",
+  "expect": [
+   "2",
+   "3",
+   "1"
+  ]
+ },
+ {
+  "id": "stack-005",
+  "area": "stack",
+  "prompt": "Copy level 2 to level 1.",
+  "setup": "1 2",
+  "solution": "OVER",
+  "expect": [
+   "1",
+   "2",
+   "1"
+  ]
+ },
+ {
+  "id": "stack-006",
+  "area": "stack",
+  "prompt": "Reverse the order of the three levels.",
+  "setup": "1 2 3",
+  "solution": "SWAP ROT",
+  "expect": [
+   "3",
+   "2",
+   "1"
+  ]
+ },
+ {
+  "id": "stack-007",
+  "area": "stack",
+  "prompt": "Square level 1 without SQ.",
+  "setup": "7",
+  "solution": "DUP *",
+  "expect": [
+   "49"
+  ]
+ },
+ {
+  "id": "stack-008",
+  "area": "stack",
+  "prompt": "Add the three numbers on the stack.",
+  "setup": "1 2 3",
+  "solution": "+ +",
+  "expect": [
+   "6"
+  ]
+ },
+ {
+  "id": "stack-009",
+  "area": "stack",
+  "prompt": "Leave how many levels the stack holds, on top of them.",
+  "setup": "4 5 6",
+  "solution": "DEPTH",
+  "expect": [
+   "4",
+   "5",
+   "6",
+   "3"
+  ]
+ },
+ {
+  "id": "stack-010",
+  "area": "stack",
+  "prompt": "Clear the stack.",
+  "setup": "1 2 3",
+  "solution": "CLEAR",
+  "expect": []
+ },
+ {
+  "id": "stack-011",
+  "area": "stack",
+  "prompt": "Copy level 3 to level 1 with PICK.",
+  "setup": "1 2 3",
+  "solution": "3 PICK",
+  "expect": [
+   "1",
+   "2",
+   "3",
+   "1"
+  ]
+ },
+ {
+  "id": "stack-012",
+  "area": "stack",
+  "prompt": "Duplicate the two top levels.",
+  "setup": "1 2",
+  "solution": "DUP2",
+  "expect": [
+   "1",
+   "2",
+   "1",
+   "2"
+  ]
+ },
+ {
+  "id": "stack-013",
+  "area": "stack",
+  "prompt": "Drop the two top levels.",
+  "setup": "1 2 3",
+  "solution": "DROP2",
+  "expect": [
+   "1"
+  ]
+ },
+ {
+  "id": "stack-014",
+  "area": "stack",
+  "prompt": "Move level 4 to level 1 with ROLL.",
+  "setup": "1 2 3 4",
+  "solution": "4 ROLL",
+  "expect": [
+   "2",
+   "3",
+   "4",
+   "1"
+  ]
+ },
+ {
+  "id": "stack-015",
+  "area": "stack",
+  "prompt": "Move level 1 to level 3 with ROLLD.",
+  "setup": "1 2 3",
+  "solution": "3 ROLLD",
+  "expect": [
+   "3",
+   "1",
+   "2"
+  ]
+ },
+ {
+  "id": "stack-016",
+  "area": "stack",
+  "prompt": "Write a program that squares a number and adds 1, then run it on 4.",
+  "solution": "4 « SQ 1 + » EVAL",
+  "expect": [
+   "17"
+  ]
+ },
+ {
+  "id": "stack-017",
+  "area": "stack",
+  "prompt": "Compute the hypotenuse of a 3-4 right triangle.",
+  "solution": "3 SQ 4 SQ + √",
+  "expect": [
+   "5"
+  ]
+ },
+ {
+  "id": "stack-018",
+  "area": "stack",
+  "prompt": "Sum the integers 1 to 10 with a FOR loop.",
+  "solution": "« 0 1 10 FOR I I + NEXT » EVAL",
+  "expect": [
+   "55"
+  ]
+ },
+ {
+  "id": "stack-019",
+  "area": "stack",
+  "prompt": "Compute 10 factorial with a START loop.",
+  "solution": "« 1 1 10 FOR K K * NEXT » EVAL",
+  "expect": [
+   "3628800"
+  ]
+ },
+ {
+  "id": "stack-020",
+  "area": "stack",
+  "prompt": "Push 1 if 7 is greater than 3, else 0, with IF.",
+  "solution": "« IF 7 3 > THEN 1 ELSE 0 END » EVAL",
+  "expect": [
+   "1"
+  ]
+ },
+ {
+  "id": "stack-021",
+  "area": "stack",
+  "prompt": "Count down from 3 to 1 leaving each number.",
+  "solution": "« 3 1 FOR I I -1 STEP » EVAL",
+  "expect": [
+   "3",
+   "2",
+   "1"
+  ]
+ },
+ {
+  "id": "stack-022",
+  "area": "stack",
+  "prompt": "Halve 100 until it is below 1 with WHILE, leaving the result.",
+  "solution": "« 100 WHILE DUP 1 ≥ REPEAT 2 / END » EVAL",
+  "expect": [
+   "25/32"
+  ]
+ },
+ {
+  "id": "stack-023",
+  "area": "stack",
+  "prompt": "Double 1 until it exceeds 1000 with DO UNTIL.",
+  "solution": "« 1 DO 2 * UNTIL DUP 1000 > END » EVAL",
+  "expect": [
+   "1024"
+  ]
+ },
+ {
+  "id": "stack-024",
+  "area": "stack",
+  "prompt": "Store 5 in X and recall it doubled.",
+  "solution": "5 'X' STO X 2 *",
+  "expect": [
+   "10"
+  ]
+ },
+ {
+  "id": "stack-025",
+  "area": "stack",
+  "prompt": "Use a local variable to cube 3.",
+  "solution": "3 « → x « x x * x * » » EVAL",
+  "expect": [
+   "27"
+  ]
+ },
+ {
+  "id": "stack-026",
+  "area": "stack",
+  "prompt": "Compute the GCD of 48 and 18.",
+  "solution": "48 18 GCD",
+  "expect": [
+   "6"
+  ]
+ },
+ {
+  "id": "stack-027",
+  "area": "stack",
+  "prompt": "Catch the error of 1/0 and leave the string \"caught\".",
+  "solution": "« IFERR 1 0 / THEN DROP2 \"caught\" END » EVAL",
+  "expect": [
+   "\"caught\""
+  ]
+ },
+ {
+  "id": "stack-028",
+  "area": "stack",
+  "prompt": "Compute the 10th Fibonacci number with a loop.",
+  "solution": "« 0 1 1 10 START SWAP OVER + NEXT DROP » EVAL",
+  "expect": [
+   "55"
+  ]
+ },
+ {
+  "id": "stack-029",
+  "area": "stack",
+  "prompt": "Leave the integer part and remainder of 17 divided by 5.",
+  "solution": "17 5 IQUOT 17 5 IREMAINDER",
+  "expect": [
+   "3",
+   "2"
+  ]
+ },
+ {
+  "id": "stack-030",
+  "area": "stack",
+  "prompt": "Test whether 97 is prime.",
+  "solution": "97 ISPRIME?",
+  "expect": [
+   "1."
+  ]
+ },
+ {
+  "id": "lists-001",
+  "area": "lists",
+  "prompt": "Make a list of 1, 2 and 3.",
+  "solution": "1 2 3 3 →LIST",
+  "expect": [
+   "{ 1 2 3 }"
+  ]
+ },
+ {
+  "id": "lists-002",
+  "area": "lists",
+  "prompt": "Sum the elements of { 1 2 3 4 }.",
+  "solution": "{ 1 2 3 4 } ΣLIST",
+  "expect": [
+   "10"
+  ]
+ },
+ {
+  "id": "lists-003",
+  "area": "lists",
+  "prompt": "Multiply the elements of { 1 2 3 4 }.",
+  "solution": "{ 1 2 3 4 } ΠLIST",
+  "expect": [
+   "24"
+  ]
+ },
+ {
+  "id": "lists-004",
+  "area": "lists",
+  "prompt": "Reverse { 1 2 3 }.",
+  "solution": "{ 1 2 3 } REVLIST",
+  "expect": [
+   "{ 3 2 1 }"
+  ]
+ },
+ {
+  "id": "lists-005",
+  "area": "lists",
+  "prompt": "Sort { 3 1 2 }.",
+  "solution": "{ 3 1 2 } SORT",
+  "expect": [
+   "{ 1 2 3 }"
+  ]
+ },
+ {
+  "id": "lists-006",
+  "area": "lists",
+  "prompt": "Get the second element of { 10 20 30 }.",
+  "solution": "{ 10 20 30 } 2 GET",
+  "expect": [
+   "20"
+  ]
+ },
+ {
+  "id": "lists-007",
+  "area": "lists",
+  "prompt": "Put 99 in place of the second element of { 10 20 30 }.",
+  "solution": "{ 10 20 30 } 2 99 PUT",
+  "expect": [
+   "{ 10 99 30 }"
+  ]
+ },
+ {
+  "id": "lists-008",
+  "area": "lists",
+  "prompt": "Count the elements of { 5 6 7 8 }.",
+  "solution": "{ 5 6 7 8 } SIZE",
+  "expect": [
+   "4"
+  ]
+ },
+ {
+  "id": "lists-009",
+  "area": "lists",
+  "prompt": "Append 4 to { 1 2 3 }.",
+  "solution": "{ 1 2 3 } 4 +",
+  "expect": [
+   "{ 1 2 3 4 }"
+  ]
+ },
+ {
+  "id": "lists-010",
+  "area": "lists",
+  "prompt": "Join { 1 2 } and { 3 4 }.",
+  "solution": "{ 1 2 } { 3 4 } +",
+  "expect": [
+   "{ 1 2 3 4 }"
+  ]
+ },
+ {
+  "id": "lists-011",
+  "area": "lists",
+  "prompt": "Add 10 to each element of { 1 2 3 }.",
+  "solution": "{ 1 2 3 } 10 ADD",
+  "expect": [
+   "{ 11 12 13 }"
+  ]
+ },
+ {
+  "id": "lists-012",
+  "area": "lists",
+  "prompt": "Square each element of { 1 2 3 } with DOLIST.",
+  "solution": "{ 1 2 3 } 1 « SQ » DOLIST",
+  "expect": [
+   "{ 1 4 9 }"
+  ]
+ },
+ {
+  "id": "lists-013",
+  "area": "lists",
+  "prompt": "Add pairs of { 1 2 3 } and { 10 20 30 } elementwise.",
+  "solution": "{ 1 2 3 } { 10 20 30 } ADD",
+  "expect": [
+   "{ 11 22 33 }"
+  ]
+ },
+ {
+  "id": "lists-014",
+  "area": "lists",
+  "prompt": "Leave the differences between neighbours of { 1 4 9 16 }.",
+  "solution": "{ 1 4 9 16 } ΔLIST",
+  "expect": [
+   "{ 3 5 7 }"
+  ]
+ },
+ {
+  "id": "lists-015",
+  "area": "lists",
+  "prompt": "Make the list of squares 1 to 5 with SEQ.",
+  "solution": "'K^2' 'K' 1 5 1 SEQ",
+  "expect": [
+   "{ 1. 4. 9. 16. 25. }"
+  ]
+ },
+ {
+  "id": "lists-016",
+  "area": "lists",
+  "prompt": "Find the position of 30 in { 10 20 30 }.",
+  "solution": "{ 10 20 30 } 30 POS",
+  "expect": [
+   "3"
+  ]
+ },
+ {
+  "id": "lists-017",
+  "area": "lists",
+  "prompt": "Take the first element of { 7 8 9 }.",
+  "solution": "{ 7 8 9 } HEAD",
+  "expect": [
+   "7"
+  ]
+ },
+ {
+  "id": "lists-018",
+  "area": "lists",
+  "prompt": "Drop the first element of { 7 8 9 }.",
+  "solution": "{ 7 8 9 } TAIL",
+  "expect": [
+   "{ 8 9 }"
+  ]
+ },
+ {
+  "id": "lists-019",
+  "area": "lists",
+  "prompt": "Take elements 2 to 3 of { 1 2 3 4 }.",
+  "solution": "{ 1 2 3 4 } 2 3 SUB",
+  "expect": [
+   "{ 2 3 }"
+  ]
+ },
+ {
+  "id": "lists-020",
+  "area": "lists",
+  "prompt": "Break { 1 2 } into its elements and their count.",
+  "solution": "{ 1 2 } OBJ→",
+  "expect": [
+   "1",
+   "2",
+   "2"
+  ]
+ },
+ {
+  "id": "lists-021",
+  "area": "lists",
+  "prompt": "Sum { 1 2 3 4 } with STREAM.",
+  "solution": "{ 1 2 3 4 } « + » STREAM",
+  "expect": [
+   "10"
+  ]
+ },
+ {
+  "id": "lists-022",
+  "area": "lists",
+  "prompt": "Keep the running sums of neighbours in { 1 2 3 4 } with DOSUBS.",
+  "solution": "{ 1 2 3 4 } 2 « + » DOSUBS",
+  "expect": [
+   "{ 3 5 7 }"
+  ]
+ },
+ {
+  "id": "lists-023",
+  "area": "lists",
+  "prompt": "Multiply each element of { 1 2 3 } by 2.",
+  "solution": "{ 1 2 3 } 2 *",
+  "expect": [
+   "{ 2 4 6 }"
+  ]
+ },
+ {
+  "id": "lists-024",
+  "area": "lists",
+  "prompt": "Leave the largest element of { 4 9 2 }.",
+  "solution": "{ 4 9 2 } SORT REVLIST HEAD",
+  "expect": [
+   "9"
+  ]
+ },
+ {
+  "id": "lists-025",
+  "area": "lists",
+  "prompt": "Make a list of the integers 1 to 4 with a FOR loop.",
+  "solution": "« 1 4 FOR I I NEXT 4 →LIST » EVAL",
+  "expect": [
+   "{ 1 2 3 4 }"
+  ]
+ },
+ {
+  "id": "lists-026",
+  "area": "lists",
+  "prompt": "Test whether { 1 2 } and { 1 2 } are the same.",
+  "solution": "{ 1 2 } { 1 2 } SAME",
+  "expect": [
+   "1."
+  ]
+ },
+ {
+  "id": "lists-027",
+  "area": "lists",
+  "prompt": "Make a list holding a string and a number.",
+  "solution": "\"a\" 1 2 →LIST",
+  "expect": [
+   "{ \"a\" 1 }"
+  ]
+ },
+ {
+  "id": "lists-028",
+  "area": "lists",
+  "prompt": "Count the elements of a nested list { { 1 2 } 3 }.",
+  "solution": "{ { 1 2 } 3 } SIZE",
+  "expect": [
+   "2"
+  ]
+ },
+ {
+  "id": "lists-029",
+  "area": "lists",
+  "prompt": "Leave the average of { 2 4 6 8 }.",
+  "solution": "{ 2 4 6 8 } DUP ΣLIST SWAP SIZE /",
+  "expect": [
+   "5"
+  ]
+ },
+ {
+  "id": "lists-030",
+  "area": "lists",
+  "prompt": "Remove duplicates from { 1 2 2 3 3 3 } with a program.",
+  "solution": "« { } 1 6 FOR I { 1 2 2 3 3 3 } I GET IF DUP2 POS THEN DROP ELSE + END NEXT » EVAL",
+  "expect": [
+   "{ 1 2 3 }"
+  ]
+ }
+]
