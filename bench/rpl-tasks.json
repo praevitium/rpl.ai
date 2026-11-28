@@ -1047,5 +1047,372 @@
   "expect": [
    "0.45359237_kg"
   ]
+ },
+ {
+  "id": "stack-031",
+  "area": "stack",
+  "prompt": "Sum the squares of 1 to 100.",
+  "solution": "« 0 1 100 FOR I I SQ + NEXT » EVAL",
+  "expect": [
+   "338350"
+  ]
+ },
+ {
+  "id": "stack-032",
+  "area": "stack",
+  "prompt": "Store a program L that lists 1 to n, and run it on 5.",
+  "solution": "« → n « 1 n FOR i i NEXT n →LIST » » 'L' STO 5 L",
+  "expect": [
+   "{ 1 2 3 4 5 }"
+  ]
+ },
+ {
+  "id": "stack-033",
+  "area": "stack",
+  "prompt": "Store a factorial program F that counts down, and run it on 6.",
+  "solution": "« 1 SWAP 1 FOR i i * -1 STEP » 'F' STO 6 F",
+  "expect": [
+   "720"
+  ]
+ },
+ {
+  "id": "stack-034",
+  "area": "stack",
+  "prompt": "Store a program P that says whether a number is even or odd, and run it on 7.",
+  "solution": "« 2 MOD IF 0 == THEN \"even\" ELSE \"odd\" END » 'P' STO 7 P",
+  "expect": [
+   "\"odd\""
+  ]
+ },
+ {
+  "id": "stack-035",
+  "area": "stack",
+  "prompt": "Leave the sum and the difference of the two numbers with local variables.",
+  "setup": "5 3",
+  "solution": "« → a b « a b + a b - » » EVAL",
+  "expect": [
+   "8",
+   "2"
+  ]
+ },
+ {
+  "id": "stack-036",
+  "area": "stack",
+  "prompt": "Count the decimal digits of the number on the stack.",
+  "setup": "12345",
+  "solution": "« 0 SWAP WHILE DUP 0 > REPEAT 10 IQUOT SWAP 1 + SWAP END DROP » EVAL",
+  "expect": [
+   "5"
+  ]
+ },
+ {
+  "id": "stack-037",
+  "area": "stack",
+  "prompt": "Classify the number as neg, zero or pos with CASE.",
+  "setup": "-2",
+  "solution": "« → x « CASE x 0 < THEN \"neg\" END x 0 == THEN \"zero\" END \"pos\" END » » EVAL",
+  "expect": [
+   "\"neg\""
+  ]
+ },
+ {
+  "id": "stack-038",
+  "area": "stack",
+  "prompt": "Leave the larger of 2^3 and 3^2.",
+  "solution": "2 3 ^ 3 2 ^ MAX",
+  "expect": [
+   "9"
+  ]
+ },
+ {
+  "id": "stack-039",
+  "area": "stack",
+  "prompt": "Compute 2^10 by doubling in a START loop.",
+  "solution": "« 1 1 10 START 2 * NEXT » EVAL",
+  "expect": [
+   "1024"
+  ]
+ },
+ {
+  "id": "stack-040",
+  "area": "stack",
+  "prompt": "Sum the odd numbers from 1 to 10.",
+  "solution": "« 0 1 10 FOR I IF I 2 MOD THEN I + END NEXT » EVAL",
+  "expect": [
+   "25"
+  ]
+ },
+ {
+  "id": "stack-041",
+  "area": "stack",
+  "prompt": "Square 5 with a local variable.",
+  "solution": "« 5 → n « n n * » » EVAL",
+  "expect": [
+   "25"
+  ]
+ },
+ {
+  "id": "stack-042",
+  "area": "stack",
+  "prompt": "Store 10 in N, double it in place, and recall it.",
+  "solution": "« 10 'N' STO N 2 * 'N' STO N » EVAL",
+  "expect": [
+   "20"
+  ]
+ },
+ {
+  "id": "stack-043",
+  "area": "stack",
+  "prompt": "Count to 6 with INCR on a variable.",
+  "solution": "« 1 'C' STO 1 5 START 'C' INCR DROP NEXT C » EVAL",
+  "expect": [
+   "6"
+  ]
+ },
+ {
+  "id": "stack-044",
+  "area": "stack",
+  "prompt": "Leave the number of characters in \"Hello\".",
+  "solution": "\"Hello\" SIZE",
+  "expect": [
+   "5"
+  ]
+ },
+ {
+  "id": "stack-045",
+  "area": "stack",
+  "prompt": "Join \"Hello\" and \" World\".",
+  "solution": "\"Hello\" \" World\" +",
+  "expect": [
+   "\"Hello World\""
+  ]
+ },
+ {
+  "id": "stack-046",
+  "area": "stack",
+  "prompt": "Take the first character of \"hello\".",
+  "solution": "\"hello\" 1 1 SUB",
+  "expect": [
+   "\"h\""
+  ]
+ },
+ {
+  "id": "stack-047",
+  "area": "stack",
+  "prompt": "Leave the character code of \"A\".",
+  "solution": "\"ABC\" NUM",
+  "expect": [
+   "65"
+  ]
+ },
+ {
+  "id": "stack-048",
+  "area": "stack",
+  "prompt": "Leave the character with code 65.",
+  "solution": "65 CHR",
+  "expect": [
+   "\"A\""
+  ]
+ },
+ {
+  "id": "stack-049",
+  "area": "stack",
+  "prompt": "Turn 123 into a string.",
+  "solution": "123 →STR",
+  "expect": [
+   "\"123\""
+  ]
+ },
+ {
+  "id": "stack-050",
+  "area": "stack",
+  "prompt": "Read the number in \"12\" and add 1.",
+  "solution": "\"12\" STR→ 1 +",
+  "expect": [
+   "13"
+  ]
+ },
+ {
+  "id": "lists-031",
+  "area": "lists",
+  "prompt": "Leave the smallest element of { 5 3 8 1 }.",
+  "solution": "{ 5 3 8 1 } SORT HEAD",
+  "expect": [
+   "1"
+  ]
+ },
+ {
+  "id": "lists-032",
+  "area": "lists",
+  "prompt": "Multiply { 1 2 3 } and { 4 5 6 } elementwise.",
+  "solution": "{ 1 2 3 } { 4 5 6 } *",
+  "expect": [
+   "{ 4 10 18 }"
+  ]
+ },
+ {
+  "id": "lists-033",
+  "area": "lists",
+  "prompt": "Sum the squares of { 1 2 3 }.",
+  "solution": "{ 1 2 3 } DUP * ΣLIST",
+  "expect": [
+   "14"
+  ]
+ },
+ {
+  "id": "lists-034",
+  "area": "lists",
+  "prompt": "Add each pair of neighbours in { 1 2 3 4 5 6 }.",
+  "solution": "{ 1 2 3 4 5 6 } 2 « + » DOSUBS",
+  "expect": [
+   "{ 3 5 7 9 11 }"
+  ]
+ },
+ {
+  "id": "lists-035",
+  "area": "lists",
+  "prompt": "Leave each element of { 1 2 3 4 } modulo 2.",
+  "solution": "{ 1 2 3 4 } 1 « 2 MOD » DOLIST",
+  "expect": [
+   "{ 1 0 1 0 }"
+  ]
+ },
+ {
+  "id": "lists-036",
+  "area": "lists",
+  "prompt": "Sort { 3 1 2 } in descending order.",
+  "solution": "{ 3 1 2 } SORT REVLIST",
+  "expect": [
+   "{ 3 2 1 }"
+  ]
+ },
+ {
+  "id": "lists-037",
+  "area": "lists",
+  "prompt": "Count the names in { a b c }.",
+  "solution": "{ a b c } SIZE",
+  "expect": [
+   "3"
+  ]
+ },
+ {
+  "id": "lists-038",
+  "area": "lists",
+  "prompt": "Take the first element of the inner list in { 1 { 2 3 } }.",
+  "solution": "{ 1 { 2 3 } } 2 GET 1 GET",
+  "expect": [
+   "2"
+  ]
+ },
+ {
+  "id": "lists-039",
+  "area": "lists",
+  "prompt": "Append 0 to { 1 2 3 }.",
+  "solution": "{ 1 2 3 } 0 +",
+  "expect": [
+   "{ 1 2 3 0 }"
+  ]
+ },
+ {
+  "id": "lists-040",
+  "area": "lists",
+  "prompt": "Get the second element of { 10 20 30 } with GETI, which also leaves the next index.",
+  "solution": "{ 10 20 30 } 2 GETI",
+  "expect": [
+   "{ 10 20 30 }",
+   "3",
+   "20"
+  ]
+ },
+ {
+  "id": "lists-041",
+  "area": "lists",
+  "prompt": "Subtract { 1 2 3 } from { 2 4 6 } elementwise.",
+  "solution": "{ 2 4 6 } { 1 2 3 } -",
+  "expect": [
+   "{ 1 2 3 }"
+  ]
+ },
+ {
+  "id": "lists-042",
+  "area": "lists",
+  "prompt": "Take the square root of each element of { 4 9 16 }.",
+  "solution": "{ 4 9 16 } √",
+  "expect": [
+   "{ 2 3 4 }"
+  ]
+ },
+ {
+  "id": "lists-043",
+  "area": "lists",
+  "prompt": "Negate each element of { 1 2 3 }.",
+  "solution": "{ 1 2 3 } NEG",
+  "expect": [
+   "{ -1 -2 -3 }"
+  ]
+ },
+ {
+  "id": "lists-044",
+  "area": "lists",
+  "prompt": "Test whether { 0 0 } equals { 0 0 }.",
+  "solution": "{ 0 0 } { 0 0 } ==",
+  "expect": [
+   "1."
+  ]
+ },
+ {
+  "id": "lists-045",
+  "area": "lists",
+  "prompt": "Append the string \"x\" to { 1 2 3 }.",
+  "solution": "{ 1 2 3 } \"x\" +",
+  "expect": [
+   "{ 1 2 3 \"x\" }"
+  ]
+ },
+ {
+  "id": "lists-046",
+  "area": "lists",
+  "prompt": "Leave the mean of { 1 2 3 }.",
+  "solution": "{ 1 2 3 } ΣLIST { 1 2 3 } SIZE /",
+  "expect": [
+   "2"
+  ]
+ },
+ {
+  "id": "lists-047",
+  "area": "lists",
+  "prompt": "Build the list of squares 1 to 5 in a loop.",
+  "solution": "« { } 1 5 FOR i i SQ + NEXT » EVAL",
+  "expect": [
+   "{ 1 4 9 16 25 }"
+  ]
+ },
+ {
+  "id": "lists-048",
+  "area": "lists",
+  "prompt": "Make a list of three copies of the number on the stack.",
+  "setup": "3",
+  "solution": "« { } 1 3 START OVER + NEXT SWAP DROP » EVAL",
+  "expect": [
+   "{ 3 3 3 }"
+  ]
+ },
+ {
+  "id": "lists-049",
+  "area": "lists",
+  "prompt": "Sum the squares of { 1 2 3 } with DOLIST.",
+  "solution": "{ 1 2 3 } 1 « DUP * » DOLIST ΣLIST",
+  "expect": [
+   "14"
+  ]
+ },
+ {
+  "id": "lists-050",
+  "area": "lists",
+  "prompt": "Leave the average of 1 to 5 from a list.",
+  "solution": "1 2 3 4 5 5 →LIST ΣLIST 5 /",
+  "expect": [
+   "3"
+  ]
  }
 ]
