@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.35 (2026-11-27)
+**Latest release:** v0.9.36 (2026-11-27)
 
 ---
 
@@ -20,6 +20,11 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.36 — 2026-11-27
+
+- Added: 52 algebra and units tasks to the RPL benchmark, now 112 tasks,
+  each reference answer checked in the interpreter.
 
 ## v0.9.35 — 2026-11-27
 
