@@ -1,6 +1,6 @@
 # Release Notes — rpl.ai
 
-**Latest release:** v0.9.36 (2026-11-27)
+**Latest release:** v0.9.37 (2026-11-28)
 
 ---
 
@@ -20,6 +20,13 @@ that run in any modern browser — no build step, no framework, no bundler
 required for development.
 
 ---
+
+## v0.9.37 — 2026-11-28
+
+- Changed: EUCLID leaves u, v and d = gcd(a, b) on three stack levels,
+  as its reference entry says and the HP's IEGCD does, where it left one
+  list { u v d }. A program that took the list apart with OBJ→ now finds
+  the three numbers already on the stack.
 
 ## v0.9.36 — 2026-11-27
 
