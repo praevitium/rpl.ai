@@ -112,7 +112,9 @@ register('EUCLID', (s) => {
   const bb = _toBigInt(b);
   if (ba === 0n && bb === 0n) throw badValue();
   const { g, u, v } = _extGcd(ba, bb);
-  s.push(RList([Integer(u), Integer(v), Integer(g)]));
+  s.push(Integer(u));
+  s.push(Integer(v));
+  s.push(Integer(g));
 }, { category: 'Integer / number theory', categoryOrder: 14, label: "EUCLID" });
 
 

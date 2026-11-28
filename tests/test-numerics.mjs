@@ -5872,12 +5872,10 @@ setAngle('RAD');
   s.push(Integer(3n));
   s.push(Integer(5n));
   lookup('EUCLID').fn(s);
-  const out = s.pop();
-  assert(out && Array.isArray(out.items) && out.items.length === 3,
-    'session076: EUCLID pushes a 3-element list');
-  const [u, v, g] = out.items;
+  assert(s.depth === 3, 'EUCLID leaves u, v and d on three levels, as the HP\'s IEGCD does, where it left one list { u v d }');
+  const [g, v, u] = [s.pop(), s.pop(), s.pop()];
   assert(isInteger(u) && isInteger(v) && isInteger(g),
-    'session076: EUCLID list elements are Integers');
+    'session076: EUCLID leaves Integers');
   // u*3 + v*5 = g, and g = 1.
   assert(g.value === 1n,
     `session076: EUCLID(3, 5) gcd = 1 (got ${g.value})`);
@@ -5890,8 +5888,7 @@ setAngle('RAD');
   s.push(Integer(12n));
   s.push(Integer(18n));
   lookup('EUCLID').fn(s);
-  const out = s.pop();
-  const [u, v, g] = out.items;
+  const [g, v, u] = [s.pop(), s.pop(), s.pop()];
   assert(g.value === 6n,
     `session076: EUCLID(12, 18) gcd = 6 (got ${g.value})`);
   assert(u.value * 12n + v.value * 18n === 6n,
@@ -5903,8 +5900,7 @@ setAngle('RAD');
   s.push(Integer(-15n));
   s.push(Integer(6n));
   lookup('EUCLID').fn(s);
-  const out = s.pop();
-  const [u, v, g] = out.items;
+  const [g, v, u] = [s.pop(), s.pop(), s.pop()];
   // gcd(|-15|, 6) = 3; verify u·(-15) + v·6 = 3.
   assert(g.value === 3n,
     `session076: EUCLID(-15, 6) gcd = 3 (got ${g.value})`);
@@ -5917,8 +5913,7 @@ setAngle('RAD');
   s.push(Integer(0n));
   s.push(Integer(7n));
   lookup('EUCLID').fn(s);
-  const out = s.pop();
-  const [u, v, g] = out.items;
+  const [g, v, u] = [s.pop(), s.pop(), s.pop()];
   // gcd(0, 7) = 7; 0·u + 7·v = 7  ⇒ v = 1 (u unconstrained by identity).
   assert(g.value === 7n, 'session076: EUCLID(0, 7) gcd = 7');
   assert(u.value * 0n + v.value * 7n === 7n,
